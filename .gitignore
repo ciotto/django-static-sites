@@ -65,3 +65,7 @@ virtualenv/
 
 # Deploy folder for example sites
 deploy/
+
+# DB
+staticsites/db.sqlite3
+staticsites/migrations/
