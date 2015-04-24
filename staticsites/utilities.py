@@ -45,8 +45,15 @@ def get_conf(key, deploy_type='', input=None):
                 return settings.STATICSITE_DEFAULTS[''][key.lower()]
 
         if hasattr(settings, key):
-            return getattr(settings, key)
-        return getattr(conf, key)
+            value = getattr(settings, key)
+            if isinstance(value, dict):
+                return get(value, deploy_type)
+            return value
+
+        value = getattr(conf, key)
+        if isinstance(value, dict):
+            return get(value, deploy_type)
+        return value
 
     return input
 

@@ -47,9 +47,16 @@ class TestUtilities(TestCase):
     def test_get_conf(self):
         reset_all()
 
-        self.assertEqual(utilities.get_conf('STATICSITE_DEPLOY_PATH'), conf.STATICSITE_DEPLOY_PATH)
+        self.assertEqual(utilities.get_conf('STATICSITE_DEFAULT_DEPLOY_TYPE'), conf.STATICSITE_DEFAULT_DEPLOY_TYPE)
+        self.assertEqual(utilities.get_conf('STATICSITE_DEPLOY_PATH', 'dev'), conf.STATICSITE_DEPLOY_PATH['dev'])
+        self.assertEqual(utilities.get_conf('STATICSITE_DEPLOY_PATH', 'test'), conf.STATICSITE_DEPLOY_PATH[''])
+
         settings.STATICSITE_DEPLOY_PATH = 'foo'
         self.assertEqual(utilities.get_conf('STATICSITE_DEPLOY_PATH'), settings.STATICSITE_DEPLOY_PATH)
+        settings.STATICSITE_DEPLOY_PATH = {'dev': 'foo', '': 'bar'}
+        self.assertEqual(utilities.get_conf('STATICSITE_DEPLOY_PATH', 'dev'), settings.STATICSITE_DEPLOY_PATH['dev'])
+        self.assertEqual(utilities.get_conf('STATICSITE_DEPLOY_PATH', 'test'), settings.STATICSITE_DEPLOY_PATH[''])
+
         settings.STATICSITE_DEFAULTS = {
             'test': {'staticsite_deploy_path': 'bar'},
             '': {'staticsite_deploy_path': 'asd'}
