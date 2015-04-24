@@ -1,24 +1,18 @@
-# from staticsites import utilities
 from staticsites import minify
 
 __author__ = 'Christian Bianciotto'
 
-STATICSITE_DEPLOY_PATH = 'deploy/%(deploy_type)s'
+STATICSITE_DEPLOY_PATH = {'dev': 'deploy/%(deploy_type)s', '': 'deploy/%(deploy_type)s_%(asctime)s'}
 
-# es. %Y-%m-%d_%H:%M'
-STATICSITE_DEPLOY_PATH_DATE_FORMAT = ''
+STATICSITE_DEPLOY_PATH_DATE_FORMAT = '%Y-%m-%d_%H.%M.%S'
 
 STATICSITE_DEFAULT_DEPLOY_TYPE = 'dev'
 
-STATICSITE_DEFAULTS = {}
+STATICSITE_MINIFY_XML = {'dev': False, '': True}
+STATICSITE_MINIFY_CSS = {'dev': False, '': True}
+STATICSITE_MINIFY_JS = {'dev': False, '': True}
 
-STATICSITE_MINIFY_XML = True
-STATICSITE_MINIFY_CSS = True
-STATICSITE_MINIFY_JS = True
-
-STATICSITE_MINIFY_FUNC = {}
-
-STATICSITE_GZIP = True
+STATICSITE_GZIP = {'dev': False, '': True}
 
 STATICSITE_HTML_EXTENSIONS = ['.html', '.htm']
 STATICSITE_CSS_EXTENSIONS = ['.css']
@@ -27,6 +21,7 @@ STATICSITE_XML_EXTENSIONS = ['.xml'] + STATICSITE_HTML_EXTENSIONS
 
 
 # Set minify correct functions for extensions
+STATICSITE_MINIFY_FUNC = {}
 for extension in STATICSITE_XML_EXTENSIONS:
     STATICSITE_MINIFY_FUNC[extension] = minify.xml
 
