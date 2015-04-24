@@ -8,7 +8,7 @@ optimized for *django-static-sites* use. You can specify multiple configuration 
 ##How to start
 
 1. install *django-static-sites* in your python path or in your *virtualenv* path
-(`pip install https://github.com/mtigas/django-medusa/archive/master.zip`)
+(`pip install https://github.com/ciotto/django-static-sites/archive/master.zip`)
 2. create an empty optimized project by `django-static-admin startproject PROJECT_NAME` command
 3. move to the `PROJECT_NAME` folder and create site by `python manage.py startsite SITE_NAME` command
 4. deploy `python manage.py migrate`
@@ -103,7 +103,7 @@ if settings.DEBUG:
 
 `django-static-sites` is work-in-progres:
 
-* autodeploy
+* ~~autodeploy~~
 * staticfile optimization
 * GZip deployed files
 * minify deployed files
@@ -114,3 +114,4 @@ if settings.DEBUG:
 * integrate [paramiko](https://github.com/paramiko/paramiko) (SSH)
 * integrate other CDN
 * add tutorials
+* deploy admin console
