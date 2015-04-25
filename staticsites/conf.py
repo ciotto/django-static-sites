@@ -1,10 +1,11 @@
+from django.core.files.storage import FileSystemStorage
 from staticsites import minify
 
 __author__ = 'Christian Bianciotto'
 
-STATICSITE_DEPLOY_PATH = {'dev': 'deploy/%(deploy_type)s', '': 'deploy/%(deploy_type)s_%(asctime)s'}
+STATICSITE_DEPLOY_ROOT = {'dev': 'deploy/%(deploy_type)s', '': 'deploy/%(deploy_type)s_%(asctime)s'}
 
-STATICSITE_DEPLOY_PATH_DATE_FORMAT = '%Y-%m-%d_%H.%M.%S'
+STATICSITE_DEPLOY_ROOT_DATE_FORMAT = '%Y-%m-%d_%H.%M.%S'
 
 STATICSITE_DEFAULT_DEPLOY_TYPE = 'dev'
 
@@ -19,6 +20,8 @@ STATICSITE_CSS_EXTENSIONS = ['.css']
 STATICSITE_JS_EXTENSIONS = ['.js', '.json']
 STATICSITE_XML_EXTENSIONS = ['.xml'] + STATICSITE_HTML_EXTENSIONS
 
+STATICSITE_DEFAULT_FILE_STORAGE = FileSystemStorage
+STATICSITE_STATICFILES_DIRS = None
 
 # Set minify correct functions for extensions
 STATICSITE_MINIFY_FUNC = {}

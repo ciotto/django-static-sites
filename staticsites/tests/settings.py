@@ -10,6 +10,8 @@ https://docs.djangoproject.com/en/1.7/ref/settings/
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 import os
+from os.path import join
+
 BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 
 
@@ -88,3 +90,7 @@ USE_TZ = True
 
 STATIC_ROOT = os.path.join(BASE_DIR, 'deploy/dev')
 STATIC_URL = '/'
+
+STATICSITE_STATICFILES_DIRS = (
+    ('staticsites/tests/examples/example1/static', ),
+)

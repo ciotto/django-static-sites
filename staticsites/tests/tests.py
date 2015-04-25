@@ -14,9 +14,9 @@ def reset(attr):
 
 
 def reset_all():
-    reset('STATICSITE_DEPLOY_PATH')
+    reset('STATICSITE_DEPLOY_ROOT')
 
-    reset('STATICSITE_DEPLOY_PATH_DATE_FORMAT')
+    reset('STATICSITE_DEPLOY_ROOT_DATE_FORMAT')
 
     reset('STATICSITE_DEFAULTS')
 
@@ -48,33 +48,33 @@ class TestUtilities(TestCase):
         reset_all()
 
         self.assertEqual(utilities.get_conf('STATICSITE_DEFAULT_DEPLOY_TYPE'), conf.STATICSITE_DEFAULT_DEPLOY_TYPE)
-        self.assertEqual(utilities.get_conf('STATICSITE_DEPLOY_PATH', 'dev'), conf.STATICSITE_DEPLOY_PATH['dev'])
-        self.assertEqual(utilities.get_conf('STATICSITE_DEPLOY_PATH', 'test'), conf.STATICSITE_DEPLOY_PATH[''])
+        self.assertEqual(utilities.get_conf('STATICSITE_DEPLOY_ROOT', 'dev'), conf.STATICSITE_DEPLOY_ROOT['dev'])
+        self.assertEqual(utilities.get_conf('STATICSITE_DEPLOY_ROOT', 'test'), conf.STATICSITE_DEPLOY_ROOT[''])
 
-        settings.STATICSITE_DEPLOY_PATH = 'foo'
-        self.assertEqual(utilities.get_conf('STATICSITE_DEPLOY_PATH'), settings.STATICSITE_DEPLOY_PATH)
-        settings.STATICSITE_DEPLOY_PATH = {'dev': 'foo', '': 'bar'}
-        self.assertEqual(utilities.get_conf('STATICSITE_DEPLOY_PATH', 'dev'), settings.STATICSITE_DEPLOY_PATH['dev'])
-        self.assertEqual(utilities.get_conf('STATICSITE_DEPLOY_PATH', 'test'), settings.STATICSITE_DEPLOY_PATH[''])
+        settings.STATICSITE_DEPLOY_ROOT = 'foo'
+        self.assertEqual(utilities.get_conf('STATICSITE_DEPLOY_ROOT'), settings.STATICSITE_DEPLOY_ROOT)
+        settings.STATICSITE_DEPLOY_ROOT = {'dev': 'foo', '': 'bar'}
+        self.assertEqual(utilities.get_conf('STATICSITE_DEPLOY_ROOT', 'dev'), settings.STATICSITE_DEPLOY_ROOT['dev'])
+        self.assertEqual(utilities.get_conf('STATICSITE_DEPLOY_ROOT', 'test'), settings.STATICSITE_DEPLOY_ROOT[''])
 
         settings.STATICSITE_DEFAULTS = {
             'test': {'staticsite_deploy_path': 'bar'},
             '': {'staticsite_deploy_path': 'asd'}
         }
-        self.assertEqual(utilities.get_conf('STATICSITE_DEPLOY_PATH', 'test'),
+        self.assertEqual(utilities.get_conf('STATICSITE_DEPLOY_ROOT', 'test'),
                          settings.STATICSITE_DEFAULTS['test']['staticsite_deploy_path'])
-        self.assertEqual(utilities.get_conf('STATICSITE_DEPLOY_PATH', 'demo'),
+        self.assertEqual(utilities.get_conf('STATICSITE_DEPLOY_ROOT', 'demo'),
                          settings.STATICSITE_DEFAULTS['']['staticsite_deploy_path'])
 
         dict1 = {'test': 'lol', '': 'qwe'}
-        self.assertEqual(utilities.get_conf('STATICSITE_DEPLOY_PATH', 'test', dict1),
+        self.assertEqual(utilities.get_conf('STATICSITE_DEPLOY_ROOT', 'test', dict1),
                          dict1['test'])
-        self.assertEqual(utilities.get_conf('STATICSITE_DEPLOY_PATH', 'demo', dict1),
+        self.assertEqual(utilities.get_conf('STATICSITE_DEPLOY_ROOT', 'demo', dict1),
                          dict1[''])
 
-        self.assertEqual(utilities.get_conf('STATICSITE_DEPLOY_PATH_DATE_FORMAT'), conf.STATICSITE_DEPLOY_PATH_DATE_FORMAT)
-        settings.STATICSITE_DEPLOY_PATH_DATE_FORMAT = 'foo'
-        self.assertEqual(utilities.get_conf('STATICSITE_DEPLOY_PATH_DATE_FORMAT'), settings.STATICSITE_DEPLOY_PATH_DATE_FORMAT)
+        self.assertEqual(utilities.get_conf('STATICSITE_DEPLOY_ROOT_DATE_FORMAT'), conf.STATICSITE_DEPLOY_ROOT_DATE_FORMAT)
+        settings.STATICSITE_DEPLOY_ROOT_DATE_FORMAT = 'foo'
+        self.assertEqual(utilities.get_conf('STATICSITE_DEPLOY_ROOT_DATE_FORMAT'), settings.STATICSITE_DEPLOY_ROOT_DATE_FORMAT)
 
     def test_has_extension(self):
         reset_all()

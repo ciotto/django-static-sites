@@ -1,10 +1,14 @@
+from genericpath import isfile
+import logging
+from os import listdir
+
 __author__ = 'Christian Bianciotto'
 
 
 from staticsites.minify import xml
 from inspect import isfunction
 from staticsites import conf
-from os.path import splitext
+from os.path import splitext, join
 from django.conf import settings
 
 
@@ -194,24 +198,32 @@ def get_gzip(gzip, deploy_type):
     return get_conf('STATICSITE_GZIP', deploy_type, gzip)
 
 
-def get_deploy_path(deploy_path, deploy_type):
+def get_file_storage(file_storage, deploy_type):
+    '''
+    Return the correct file_storage type from input data and configuration
+    :param file_storage: The input file_storage type or dict
+    :param deploy_type: The deploy type
+    :return: get_conf('STATICSITE_DEFAULT_FILE_STORAGE', deploy_type, file_storage)
+    '''
+    return get_conf('STATICSITE_DEFAULT_FILE_STORAGE', deploy_type, file_storage)
+
+
+def get_deploy_root(deploy_type):
     '''
     Return the correct deploy_path from input data and configuration
-    :param gzip: The input deploy_path or dict
     :param deploy_type: The deploy type
-    :return: get_conf('STATICSITE_DEPLOY_PATH', deploy_type, gzip)
+    :return: get_conf('STATICSITE_DEPLOY_ROOT', deploy_type)
     '''
-    return get_conf('STATICSITE_DEPLOY_PATH', deploy_type, deploy_path)
+    return get_conf('STATICSITE_DEPLOY_ROOT', deploy_type)
 
 
-def get_deploy_path_date_format(deploy_path_date_format, deploy_type):
+def get_deploy_root_date_format(deploy_type):
     '''
     Return the correct deploy_path_date_formatp from input data and configuration
-    :param gzip: The input deploy_path_date_formatp or dict
     :param deploy_type: The deploy type
-    :return: get_conf('STATICSITE_DEPLOY_PATH_DATE_FORMAT', deploy_type, gzip)
+    :return: get_conf('STATICSITE_DEPLOY_ROOT_DATE_FORMAT', deploy_type)
     '''
-    return get_conf('STATICSITE_DEPLOY_PATH_DATE_FORMAT', deploy_type, deploy_path_date_format)
+    return get_conf('STATICSITE_DEPLOY_ROOT_DATE_FORMAT', deploy_type)
 
 
 def get_default_deploy_type():
@@ -220,3 +232,59 @@ def get_default_deploy_type():
     :return: get_conf('STATICSITE_DEFAULT_DEPLOY_TYPE')
     '''
     return get_conf('STATICSITE_DEFAULT_DEPLOY_TYPE')
+
+
+def iterate_dir(path, callback, ignore=None, *args, **kwargs):
+    '''
+    Recursive function, iterate file and call the callback function by passing root path, sub_path and extra args/kwargs
+    :param path: The root path
+    :param callback: The callback function
+    :param ignore: The ignore function, return all ignore file in sub_path
+    :param args:
+    :param kwargs:
+    '''
+    def _iterate_dir(path, sub_path, callback, ignore, *args, **kwargs):
+        tmp_dir = join(path, sub_path)
+
+        dirs = []
+
+        files = listdir(tmp_dir)
+
+        ignore_files = []
+        if ignore:
+            ignore_files = ignore(tmp_dir, files)
+
+        for node in files:
+            node_path = join(tmp_dir, node)
+
+            if node not in ignore_files:
+                if isfile(node_path):
+                    callback(path, join(sub_path, node), *args, **kwargs)
+                else:
+                    dirs.append(join(sub_path, node))
+
+        # Iterate the directory after all files
+        for node in dirs:
+            _iterate_dir(path, node, callback, ignore)
+
+    _iterate_dir(path, "", callback, ignore, *args, **kwargs)
+
+
+def copy_file(path, sub_path, storage):
+    '''
+    Copy the file in path/sub_path in the storage sub_path
+    :param path: The root path
+    :param sub_path: The sub_path
+    :param storage: The storage
+    '''
+    full_path = join(path, sub_path)
+
+    file = None
+    try:
+        file = open(full_path, 'r')
+        storage.save(sub_path, file)
+
+        logging.info('Copy static file to %s' % path)
+    finally:
+        if file:
+            file.close()

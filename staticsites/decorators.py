@@ -15,8 +15,7 @@ def staticview(*args, **kwargs):
 
         func.minify = kwargs.get('minify', None)
         func.gzip = kwargs.get('gzip', None)
-        func.deploy_path = kwargs.get('deploy_path', None)
-        func.deploy_path_date_format = kwargs.get('deploy_path_date_format', None)
+        func.file_storage = kwargs.get('file_storage', None)
 
 
         return func
