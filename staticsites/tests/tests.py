@@ -58,13 +58,13 @@ class TestUtilities(TestCase):
         self.assertEqual(utilities.get_conf('STATICSITE_DEPLOY_ROOT', 'test'), settings.STATICSITE_DEPLOY_ROOT[''])
 
         settings.STATICSITE_DEFAULTS = {
-            'test': {'staticsite_deploy_path': 'bar'},
-            '': {'staticsite_deploy_path': 'asd'}
+            'test': {'staticsite_deploy_root': 'bar'},
+            '': {'staticsite_deploy_root': 'asd'}
         }
         self.assertEqual(utilities.get_conf('STATICSITE_DEPLOY_ROOT', 'test'),
-                         settings.STATICSITE_DEFAULTS['test']['staticsite_deploy_path'])
+                         settings.STATICSITE_DEFAULTS['test']['staticsite_deploy_root'])
         self.assertEqual(utilities.get_conf('STATICSITE_DEPLOY_ROOT', 'demo'),
-                         settings.STATICSITE_DEFAULTS['']['staticsite_deploy_path'])
+                         settings.STATICSITE_DEFAULTS['']['staticsite_deploy_root'])
 
         dict1 = {'test': 'lol', '': 'qwe'}
         self.assertEqual(utilities.get_conf('STATICSITE_DEPLOY_ROOT', 'test', dict1),
@@ -130,9 +130,9 @@ class TestUtilities(TestCase):
     def test_minify(self):
         reset_all()
 
-        self.assertEquals(utilities.get_minify(None, 'foo.html', 'demo'), conf.STATICSITE_MINIFY_XML)
-        self.assertEquals(utilities.get_minify(None, 'foo.css', 'demo'), conf.STATICSITE_MINIFY_CSS)
-        self.assertEquals(utilities.get_minify(None, 'foo.js', 'demo'), conf.STATICSITE_MINIFY_JS)
+        self.assertEquals(utilities.get_minify(None, 'foo.html', 'demo'), conf.STATICSITE_MINIFY_XML[''])
+        self.assertEquals(utilities.get_minify(None, 'foo.css', 'demo'), conf.STATICSITE_MINIFY_CSS[''])
+        self.assertEquals(utilities.get_minify(None, 'foo.js', 'demo'), conf.STATICSITE_MINIFY_JS[''])
 
         self.assertTrue(utilities.get_minify(True, 'foo.html', None))
         self.assertFalse(utilities.get_minify(False, 'foo.html', None))
