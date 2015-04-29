@@ -1,6 +1,3 @@
-from itertools import chain
-from django.utils import importlib
-
 __author__ = 'Christian Bianciotto'
 
 
@@ -14,12 +11,11 @@ import logging
 import io
 
 from inspect import getmembers, isfunction
+from django.utils import importlib
 from django.conf import settings
 from django.utils.module_loading import import_module
-from django.db.models import Count, Q, F
+from django.db.models import Q
 from django.http import HttpRequest
-from django.contrib.staticfiles import storage, management
-from django.contrib.staticfiles.management.commands import collectstatic
 
 from models import DeployOperation, Deploy
 
@@ -37,11 +33,6 @@ def deploy(deploy_type=utilities.get_conf('STATICSITE_DEFAULT_DEPLOY_TYPE')):
 
     # Create deploy root
     deploy_root = utilities.get_deploy_root(deploy_type)
-    deploy_root_date_format = utilities.get_deploy_root_date_format(deploy_type)
-    deploy_root = deploy_root % {
-        'deploy_type': deploy_type,
-        'asctime': datetime.now().strftime(deploy_root_date_format)
-    }
     if not exists(deploy_root):
         makedirs(deploy_root)
 
