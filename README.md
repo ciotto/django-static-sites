@@ -104,14 +104,12 @@ if settings.DEBUG:
 `django-static-sites` is work-in-progres:
 
 * ~~autodeploy~~
-* static file optimization
+* ~~static file optimization~~
+* revert deploy if fail
 * GZip deployed files
 * minify deployed files
 * custom header for deployed files
 * ~~singe configuration constant as dictionary~~
 * deploy on multiple remote
-* integrate [boto](https://github.com/boto/boto) (AWS CloudFront)
-* integrate [paramiko](https://github.com/paramiko/paramiko) (SSH)
-* integrate other CDN
 * add tutorials
 * deploy admin console
