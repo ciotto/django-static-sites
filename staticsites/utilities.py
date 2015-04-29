@@ -1,6 +1,10 @@
-from genericpath import isfile
+from genericpath import isfile, getmtime
 import logging
 from os import listdir
+from time import ctime
+from time import strptime
+from datetime import datetime
+from models import DeployOperation
 
 __author__ = 'Christian Bianciotto'
 
@@ -8,7 +12,7 @@ __author__ = 'Christian Bianciotto'
 from staticsites.minify import xml
 from inspect import isfunction
 from staticsites import conf
-from os.path import splitext, join
+from os.path import splitext, join, basename
 from django.conf import settings
 
 
@@ -270,7 +274,7 @@ def iterate_dir(path, callback, ignore=None, *args, **kwargs):
     _iterate_dir(path, "", callback, ignore, *args, **kwargs)
 
 
-def copy_file(path, sub_path, storage):
+def copy_file(path, sub_path, storage, deploy, paths):
     '''
     Copy the file in path/sub_path in the storage sub_path
     :param path: The root path
@@ -281,10 +285,35 @@ def copy_file(path, sub_path, storage):
 
     file = None
     try:
-        file = open(full_path, 'r')
-        storage.save(sub_path, file)
+        skip = False
+        operation_type = 'N'
 
-        logging.info('Copy static file to %s' % path)
+        if storage.exists(sub_path):
+            # Check if need update by checking modification date
+            if datetime.fromtimestamp(getmtime(full_path)) > storage.modified_time(sub_path):
+                storage.delete(sub_path)
+                operation_type = 'U'
+            else:
+                operation_type = 'NU'
+                logging.info('File %s not updated' % path)
+
+        if operation_type is not 'NU':
+            file = open(full_path, 'r')
+            storage.save(sub_path, file)
+
+            if operation_type is 'U':
+                logging.info('Update file %s' % sub_path)
+            else:
+                logging.info('Create dynamic file %s' % sub_path)
+
+        dpo = DeployOperation(deploy=deploy,
+                              file_type='S',
+                              operation_type=operation_type,
+                              path=sub_path,
+                              file_stogare=storage.__class__.__module__ + '.' + storage.__class__.__name__)
+        dpo.save()
+
+        paths.append(sub_path)
     finally:
         if file:
             file.close()
