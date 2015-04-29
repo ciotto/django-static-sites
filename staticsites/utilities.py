@@ -66,6 +66,14 @@ def get_conf(key, deploy_type='', input=None):
     return input
 
 
+def get_default_deploy_type():
+    '''
+    Return the correct default_deploy_type from configuration
+    :return: get_conf('STATICSITE_DEFAULT_DEPLOY_TYPE')
+    '''
+    return get_conf('STATICSITE_DEFAULT_DEPLOY_TYPE')
+
+
 def get_minify_function(minify, path):
     '''
     Return minify function from path or None
@@ -144,7 +152,7 @@ def is_js(path):
     return has_extension(path, get_conf('STATICSITE_JS_EXTENSIONS'))
 
 
-def get_path(path, func_name, deploy_type):
+def get_path(path, func_name, deploy_type=get_default_deploy_type()):
     '''
     Return the correct file path from input data and configuration
     :param path: The input path or dict
@@ -161,7 +169,7 @@ def get_path(path, func_name, deploy_type):
     return path
 
 
-def get_minify(minify, path, deploy_type):
+def get_minify(minify, path, deploy_type=get_default_deploy_type()):
     '''
     Return True or minify function if file can be minified
     :param minify: The input value or dict or minify function
@@ -192,7 +200,7 @@ def get_minify(minify, path, deploy_type):
     # return False
 
 
-def get_gzip(gzip, deploy_type):
+def get_gzip(gzip, deploy_type=get_default_deploy_type()):
     '''
     Return the correct gzip value from input data and configuration
     :param gzip: The input gzip value or dict
@@ -202,7 +210,7 @@ def get_gzip(gzip, deploy_type):
     return get_conf('STATICSITE_GZIP', deploy_type, gzip)
 
 
-def get_file_storage(file_storage, deploy_type):
+def get_file_storage(file_storage, deploy_type=get_default_deploy_type()):
     '''
     Return the correct file_storage type from input data and configuration
     :param file_storage: The input file_storage type or dict
@@ -212,16 +220,23 @@ def get_file_storage(file_storage, deploy_type):
     return get_conf('STATICSITE_DEFAULT_FILE_STORAGE', deploy_type, file_storage)
 
 
-def get_deploy_root(deploy_type):
+def get_deploy_root(deploy_type=get_default_deploy_type()):
     '''
     Return the correct deploy_path from input data and configuration
     :param deploy_type: The deploy type
     :return: get_conf('STATICSITE_DEPLOY_ROOT', deploy_type)
     '''
-    return get_conf('STATICSITE_DEPLOY_ROOT', deploy_type)
+    deploy_root = get_conf('STATICSITE_DEPLOY_ROOT', deploy_type)
+    deploy_root_date_format = get_deploy_root_date_format(deploy_type)
+    deploy_root = deploy_root % {
+        'deploy_type': deploy_type,
+        'asctime': datetime.now().strftime(deploy_root_date_format)
+    }
+
+    return deploy_root
 
 
-def get_deploy_root_date_format(deploy_type):
+def get_deploy_root_date_format(deploy_type=get_default_deploy_type()):
     '''
     Return the correct deploy_path_date_formatp from input data and configuration
     :param deploy_type: The deploy type
@@ -230,12 +245,13 @@ def get_deploy_root_date_format(deploy_type):
     return get_conf('STATICSITE_DEPLOY_ROOT_DATE_FORMAT', deploy_type)
 
 
-def get_default_deploy_type():
+def get_default_index(deploy_type=get_default_deploy_type()):
     '''
-    Return the correct default_deploy_type from configuration
-    :return: get_conf('STATICSITE_DEFAULT_DEPLOY_TYPE')
+    Return the correct default_index from input data and configuration
+    :param deploy_type: The deploy type
+    :return: get_conf('STATICSITE_DEFAULT_INDEX', deploy_type)
     '''
-    return get_conf('STATICSITE_DEFAULT_DEPLOY_TYPE')
+    return get_conf('STATICSITE_DEFAULT_INDEX', deploy_type)
 
 
 def iterate_dir(path, callback, ignore=None, *args, **kwargs):
