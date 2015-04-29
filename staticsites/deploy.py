@@ -29,6 +29,8 @@ def deploy(deploy_type=utilities.get_conf('STATICSITE_DEFAULT_DEPLOY_TYPE')):
     dp = Deploy(type=deploy_type)
     dp.save()
 
+    utilities.set_settings(deploy_type)
+
     paths = []
 
     # Create deploy root

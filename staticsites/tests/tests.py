@@ -18,7 +18,10 @@ def reset_all():
 
     reset('STATICSITE_DEPLOY_ROOT_DATE_FORMAT')
 
-    reset('STATICSITE_DEFAULTS')
+    reset('STATICSITE_SETTINGS')
+
+    reset('STATICSITE_DEFAULT_DEPLOY_TYPE')
+    reset('STATICSITE_DEFAULT_INDEX')
 
     reset('STATICSITE_MINIFY_XML')
     reset('STATICSITE_MINIFY_CSS')
@@ -30,6 +33,11 @@ def reset_all():
     reset('STATICSITE_CSS_EXTENSIONS')
     reset('STATICSITE_JS_EXTENSIONS')
     reset('STATICSITE_XML_EXTENSIONS')
+
+    reset('STATICSITE_DEFAULT_FILE_STORAGE')
+    reset('STATICSITE_STATICFILES_DIRS')
+
+    reset('STATICSITE_MINIFY_FUNC')
 
 
 class TestUtilities(TestCase):
@@ -56,15 +64,6 @@ class TestUtilities(TestCase):
         settings.STATICSITE_DEPLOY_ROOT = {'dev': 'foo', '': 'bar'}
         self.assertEqual(utilities.get_conf('STATICSITE_DEPLOY_ROOT', 'dev'), settings.STATICSITE_DEPLOY_ROOT['dev'])
         self.assertEqual(utilities.get_conf('STATICSITE_DEPLOY_ROOT', 'test'), settings.STATICSITE_DEPLOY_ROOT[''])
-
-        settings.STATICSITE_DEFAULTS = {
-            'test': {'staticsite_deploy_root': 'bar'},
-            '': {'staticsite_deploy_root': 'asd'}
-        }
-        self.assertEqual(utilities.get_conf('STATICSITE_DEPLOY_ROOT', 'test'),
-                         settings.STATICSITE_DEFAULTS['test']['staticsite_deploy_root'])
-        self.assertEqual(utilities.get_conf('STATICSITE_DEPLOY_ROOT', 'demo'),
-                         settings.STATICSITE_DEFAULTS['']['staticsite_deploy_root'])
 
         dict1 = {'test': 'lol', '': 'qwe'}
         self.assertEqual(utilities.get_conf('STATICSITE_DEPLOY_ROOT', 'test', dict1),
@@ -150,25 +149,40 @@ class TestUtilities(TestCase):
         self.assertRaises(KeyError, utilities.get_minify, {'test': False}, 'foo.css', 'demo')
 
         # If minify is false, return correct value from settings
-        settings.STATICSITE_DEFAULTS = {
-            'test': {
-                'staticsite_minify_xml': False,
-                'staticsite_minify_css': True,
-                'staticsite_minify_js': False,
-            },
-            '': {
-                'staticsite_minify_xml': True,
-                'staticsite_minify_css': False,
-                'staticsite_minify_js': True,
-            }
-        }
-        self.assertEquals(utilities.get_minify(None, 'foo.html', 'test'), settings.STATICSITE_DEFAULTS['test']['staticsite_minify_xml'])
-        self.assertEquals(utilities.get_minify(None, 'foo.css', 'test'), settings.STATICSITE_DEFAULTS['test']['staticsite_minify_css'])
-        self.assertEquals(utilities.get_minify(None, 'foo.js', 'test'), settings.STATICSITE_DEFAULTS['test']['staticsite_minify_js'])
-        self.assertEquals(utilities.get_minify(None, 'foo.html', 'demo'), settings.STATICSITE_DEFAULTS['']['staticsite_minify_xml'])
-        self.assertEquals(utilities.get_minify(None, 'foo.css', 'demo'), settings.STATICSITE_DEFAULTS['']['staticsite_minify_css'])
-        self.assertEquals(utilities.get_minify(None, 'foo.js', 'demo'), settings.STATICSITE_DEFAULTS['']['staticsite_minify_js'])
+        settings.STATICSITE_MINIFY_XML = {'test': True, '': False}
+        settings.STATICSITE_MINIFY_CSS = {'test': False, '': True}
+        settings.STATICSITE_MINIFY_JS = {'test': False, '': False}
+        self.assertEquals(utilities.get_minify(None, 'foo.html', 'test'), settings.STATICSITE_MINIFY_XML['test'])
+        self.assertEquals(utilities.get_minify(None, 'foo.css', 'test'), settings.STATICSITE_MINIFY_CSS['test'])
+        self.assertEquals(utilities.get_minify(None, 'foo.js', 'test'), settings.STATICSITE_MINIFY_JS['test'])
+        self.assertEquals(utilities.get_minify(None, 'foo.html', 'demo'), settings.STATICSITE_MINIFY_XML[''])
+        self.assertEquals(utilities.get_minify(None, 'foo.css', 'demo'), settings.STATICSITE_MINIFY_CSS[''])
+        self.assertEquals(utilities.get_minify(None, 'foo.js', 'demo'), settings.STATICSITE_MINIFY_JS[''])
 
         # If minify is True retur always True
         self.assertTrue(utilities.get_minify(True, 'foo.bar', None))
         self.assertTrue(utilities.get_minify(True, None, None))
+
+    def test_set_settings(self):
+        settings.STATICSITE_SETTINGS = {
+            'test': {
+                'CONSTANT_1': 1,
+                'CONSTANT_2': 2,
+                'CONSTANT_3': 3,
+                },
+            '': {
+                'CONSTANT_1': 4,
+                'CONSTANT_2': 5,
+                'CONSTANT_3': 6,
+                }
+        }
+
+        utilities.set_settings('test')
+        self.assertEquals(settings.CONSTANT_1, settings.STATICSITE_SETTINGS['test']['CONSTANT_1'])
+        self.assertEquals(settings.CONSTANT_2, settings.STATICSITE_SETTINGS['test']['CONSTANT_2'])
+        self.assertEquals(settings.CONSTANT_3, settings.STATICSITE_SETTINGS['test']['CONSTANT_3'])
+
+        utilities.set_settings('demo')
+        self.assertEquals(settings.CONSTANT_1, settings.STATICSITE_SETTINGS['']['CONSTANT_1'])
+        self.assertEquals(settings.CONSTANT_2, settings.STATICSITE_SETTINGS['']['CONSTANT_2'])
+        self.assertEquals(settings.CONSTANT_3, settings.STATICSITE_SETTINGS['']['CONSTANT_3'])

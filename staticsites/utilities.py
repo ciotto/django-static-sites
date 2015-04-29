@@ -39,19 +39,12 @@ def get_conf(key, deploy_type='', input=None):
     Get configuration from string key
     :param key: the config key
     :param deploy_type: the deploy type
-    :return: in order, input[deploy_type] or input[''] settings.STATICSITE_DEFAULTS[deploy_type][key.lower()] or
-            settings.STATICSITE_DEFAULTS[''][key.lower()] or settings.key or conf.key or input
+    :return: in order, input[deploy_type] or input[''] or settings.key or conf.key or input
     '''
     if input and isinstance(input, dict):
         return get(input, deploy_type)
     # Use == for exclude empty array and False
     elif input == None:
-        if hasattr(settings, 'STATICSITE_DEFAULTS'):
-            if deploy_type in settings.STATICSITE_DEFAULTS and key.lower() in settings.STATICSITE_DEFAULTS[deploy_type]:
-                return settings.STATICSITE_DEFAULTS[deploy_type][key.lower()]
-            elif '' in settings.STATICSITE_DEFAULTS and key.lower() in settings.STATICSITE_DEFAULTS['']:
-                return settings.STATICSITE_DEFAULTS[''][key.lower()]
-
         if hasattr(settings, key):
             value = getattr(settings, key)
             if isinstance(value, dict):
@@ -252,6 +245,17 @@ def get_default_index(deploy_type=get_default_deploy_type()):
     :return: get_conf('STATICSITE_DEFAULT_INDEX', deploy_type)
     '''
     return get_conf('STATICSITE_DEFAULT_INDEX', deploy_type)
+
+
+def set_settings(deploy_type=get_default_deploy_type()):
+    '''
+    Set the correct setting.py constants for deploy_type
+    :param deploy_type: The deploy type
+    '''
+    staticsite_settings = get_conf('STATICSITE_SETTINGS', deploy_type)
+
+    for key, value in staticsite_settings.iteritems():
+        setattr(settings, key, value)
 
 
 def iterate_dir(path, callback, ignore=None, *args, **kwargs):
