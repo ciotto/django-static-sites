@@ -85,18 +85,16 @@ If you want to integrate `django-static-sites` in existing project you must to:
 
 If you want to use Django development server to serve the deployed static site:
 
-1. set `STATIC_ROOT = os.path.join(BASE_DIR, 'deploy/dev')`
-2. set `STATIC_URL = '/'`
-3. add this lines at your `url.py`
+1. add this lines at your `url.py`
 
 ```python
 # Serve default deploy folder as site root
 if settings.DEBUG:
-    urlpatterns += patterns(
-        'django.contrib.staticfiles.views',
-        url(r'^(?:index.html)?$', 'serve', kwargs={'path': 'index.html'}),
-        url(r'^(?P<path>(?:js|css|img)/.*)$', 'serve'),
-    )
+    urlpatterns += patterns('', (
+        r'^(?P<path>.*)$',
+        'django.views.static.serve',
+        {'document_root': join(dirname(settings.BASE_DIR), get_deploy_root()), 'path': get_default_index()}
+    ))
 ```
 
 ##ToDo
@@ -112,4 +110,4 @@ if settings.DEBUG:
 * ~~singe configuration constant as dictionary~~
 * deploy on multiple remote
 * add tutorials
-* deploy admin console
+* ~~deploy admin console~~
