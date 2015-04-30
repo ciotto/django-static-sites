@@ -26,6 +26,11 @@ def deploy(deploy_type=utilities.get_conf('STATICSITE_DEFAULT_DEPLOY_TYPE')):
         format='(%(threadName)-10s) %(message)s',
     )
 
+    deploys = Deploy.objects.filter(type=deploy_type).order_by('-id')
+    last_dp = None
+    if len(deploys):
+        last_dp = deploys[0]
+
     dp = Deploy(type=deploy_type)
     dp.save()
 
@@ -90,30 +95,34 @@ def deploy(deploy_type=utilities.get_conf('STATICSITE_DEFAULT_DEPLOY_TYPE')):
                                                   file_type='D',
                                                   operation_type='N',
                                                   path=path,
-                                                  md5=hashlib.md5(content).hexdigest(),
+                                                  hash=hashlib.sha512(content).hexdigest(),
                                                   file_stogare=storage.__class__.__module__ + '.' + storage.__class__.__name__)
 
-                        skip = False
-
                         if storage.exists(path):
-                            # Check if need update by checking stored md5
-                            md5 = None
-                            deploy_operations = DeployOperation.objects.filter(path=path, deploy__type=deploy_type).reverse()
-                            if deploy_operations:
-                                md5 = deploy_operations[0].md5
+                            # Check if need update by checking stored hash
+                            last_dpo = None
+                            if last_dp:
+                                dpos = DeployOperation.objects.filter(path=path, deploy=last_dp)
+                                if dpos:
+                                    last_dpo = dpos[0]
 
-                            if not md5 or new_dpo.md5 != md5:
-                                storage.delete(path)
-                                new_dpo.operation_type = 'U'
-                            else:
+                            if last_dpo and last_dpo.hash and new_dpo.hash == last_dpo.hash:
+                                print 'skip'
                                 new_dpo.operation_type = 'NU'
                                 logging.info('File %s not updated' % path)
+                            else:
+                                print 'delete'
+                                storage.delete(path)
+                                new_dpo.operation_type = 'U'
 
                         if new_dpo.operation_type is not 'NU':
                             file = None
                             try:
-                                file = io.BytesIO(response.content)
+                                file = io.BytesIO(content)
                                 storage.save(path, file)
+
+                                print path
+                                print content
 
                                 if new_dpo.operation_type is 'U':
                                     logging.info('Update file %s' % path)
@@ -130,9 +139,7 @@ def deploy(deploy_type=utilities.get_conf('STATICSITE_DEFAULT_DEPLOY_TYPE')):
                 logging.info('No views module for app %s' % appname)
 
     # Clean files
-    deploys = Deploy.objects.exclude(id=dp.id).order_by('-id')
-    if len(deploys):
-        last_dp = deploys[0]
+    if last_dp:
         removed_paths = DeployOperation.objects.filter(deploy=last_dp).exclude(Q(path__in=paths) | Q(operation_type='R'))
         for path in removed_paths:
             file_stogare_components = path.file_stogare.rsplit('.', 1)
@@ -143,6 +150,6 @@ def deploy(deploy_type=utilities.get_conf('STATICSITE_DEFAULT_DEPLOY_TYPE')):
                                       file_type=path.file_type,
                                       operation_type='R',
                                       path=path.path,
-                                      md5=path.md5,
+                                      hash=path.hash,
                                       file_stogare=path.file_stogare)
             new_dpo.save()

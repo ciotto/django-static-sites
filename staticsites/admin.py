@@ -12,7 +12,7 @@ class DeployAdmin(admin.ModelAdmin):
 # Customize DeployOperation admin page.
 class DeployOperationAdmin(admin.ModelAdmin):
     # Select visible fields on preview
-    list_display = ['id', 'deploy', 'file_type', 'operation_type', 'path', 'md5', 'file_stogare']
+    list_display = ['id', 'deploy', 'file_type', 'operation_type', 'path', 'hash', 'file_stogare']
 
 admin.site.register(Deploy, DeployAdmin)
 admin.site.register(DeployOperation, DeployOperationAdmin)

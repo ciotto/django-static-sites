@@ -13,7 +13,6 @@ def index(request, deploy_type=None):
 
 @staticview(path={'demo': 'asd/test.js', '': 'js/test.js'})
 def js__test(request):
-
     ctx = {'title': 'Hello world!'}
 
     return render_to_response('test.js', ctx, context_instance=RequestContext(request))

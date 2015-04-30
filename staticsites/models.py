@@ -31,7 +31,7 @@ class DeployOperation(models.Model):
     file_type = models.CharField(choices=FILE_TYPE, max_length=2)
     operation_type = models.CharField(choices=OPERATION_TYPE, max_length=2)
     path = models.CharField(max_length=250)
-    md5 = models.CharField(max_length=32, null=True, blank=True)
+    hash = models.CharField(max_length=128, null=True, blank=True)
     file_stogare = models.CharField(max_length=100)
 
     def __unicode__(self):
