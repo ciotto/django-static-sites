@@ -7,7 +7,7 @@ from optparse import make_option
 from django.utils import autoreload
 from django.utils.autoreload import gen_filenames as _gen_filenames
 from django.apps import apps
-from django.core.management.commands import runserver
+from django.contrib.staticfiles.management.commands import runserver
 
 from staticsites.deploy import deploy
 

@@ -81,7 +81,7 @@ You can also add all your static file in a static file folder of your site appli
 
 If you want to integrate `django-static-sites` in existing project you must to:
 
-1. add `staticsites` in your INSTALLED_APPS (before staticfiles)
+1. add `staticsites` in your INSTALLED_APPS (replace django.contrib.staticfiles)
 
 If you want to use Django development server to serve the deployed static site:
 
