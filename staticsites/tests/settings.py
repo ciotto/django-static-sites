@@ -37,10 +37,12 @@ INSTALLED_APPS = (
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
-    'django.contrib.staticfiles',
 
     # This app
     'staticsites',
+
+    # staticsite must be imported before staticfiles
+    'django.contrib.staticfiles',
 
     # Examples
     'staticsites.tests.examples.example1',
