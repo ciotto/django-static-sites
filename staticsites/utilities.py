@@ -53,7 +53,10 @@ def get_conf(key, deploy_type='', input=None):
 
         value = getattr(conf, key)
         if isinstance(value, dict):
-            return get(value, deploy_type)
+            try:
+                return get(value, deploy_type)
+            except KeyError:
+                pass
         return value
 
     return input
