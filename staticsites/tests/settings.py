@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/1.7/ref/settings/
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 import os
 from os.path import join
+from django.core.files.storage import FileSystemStorage
 
 BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 
@@ -44,6 +45,9 @@ INSTALLED_APPS = (
 
     # Examples
     'staticsites.tests.examples.example1',
+
+    # Library for examples
+    # 'storages',
 )
 
 MIDDLEWARE_CLASSES = (
@@ -91,6 +95,37 @@ USE_TZ = True
 STATIC_ROOT = os.path.join(BASE_DIR, 'deploy/dev')
 STATIC_URL = '/static/'
 
+
+# from storages.backends.s3boto import S3BotoStorage
+# from storages.backends import s3
+
 STATICSITE_STATICFILES_DIRS = (
     ('staticsites/tests/examples/example1/static', ),
 )
+
+
+# S3BotoStorage configuration
+# AWS_ACCESS_KEY_ID = 'YOUR_AWS_ACCESS_KEY_ID'
+# AWS_SECRET_ACCESS_KEY = 'YOUR_AWS_SECRET_ACCESS_KEY'
+# AWS_ACCESS_KEY_ID = 'AKIAJIDC3RX5YL2XW76Q'
+# AWS_SECRET_ACCESS_KEY = 'mldXovsD5cYHY24uWb/744I3CGyT/rMUXB9sLLKo'
+# BOTO_S3_BUCKET = 'django-static-sites-test'
+# BOTO_BUCKET_LOCATION = 'eu'
+# BOTO_S3_HOST = 'dsapitest.s3.amazonaws.com'
+# BOTO_S3_BUCKET = 'test'
+# STATICSITE_SETTINGS = {
+#     'test': {
+#         'BOTO_S3_BUCKET': 'django-static-sites-test',
+#     },
+#     'demo': {
+#         'BOTO_S3_BUCKET': 'YOUR_DEMO_AWS_STORAGE_BUCKET_NAME',
+#     },
+#     '': {
+#
+#     }
+# }
+
+STATICSITE_DEPLOY_ROOT = {'dev': 'deploy/%(deploy_type)s', '': 'teststatic'}
+
+# from django_boto.s3.storage import S3Storage
+# STATICSITE_DEFAULT_FILE_STORAGE = {'dev': FileSystemStorage, '': S3Storage}

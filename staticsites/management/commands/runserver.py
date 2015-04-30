@@ -52,3 +52,6 @@ class Command(runserver.Command):
             autoreload.main(self.inner_run, args, options)
         else:
             self.inner_run(*args, **options)
+
+    def handle(self, *args, **options):
+        super(Command, self).handle(*args, **options)

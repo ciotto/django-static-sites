@@ -7,7 +7,7 @@ STATICSITE_DEPLOY_ROOT = {'dev': 'deploy/%(deploy_type)s', '': 'deploy/%(deploy_
 
 STATICSITE_DEPLOY_ROOT_DATE_FORMAT = '%Y-%m-%d_%H.%M.%S'
 
-STATICSITE_SETTINGS = {}
+STATICSITE_SETTINGS = {'': {}}
 
 STATICSITE_DEFAULT_DEPLOY_TYPE = 'dev'
 STATICSITE_DEFAULT_INDEX = 'index.html'
