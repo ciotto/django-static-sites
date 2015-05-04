@@ -3,11 +3,12 @@ __author__ = 'Christian Bianciotto'
 
 from setuptools import setup, find_packages
 from pip.req import parse_requirements
+from pip.download import PipSession
 
 
 README = open('README.md').read()
 
-install_requires = parse_requirements('requirements.txt')
+install_requires = parse_requirements('requirements.txt', session=PipSession())
 install_requires = [str(ir.req) for ir in install_requires]
 
 setup(
