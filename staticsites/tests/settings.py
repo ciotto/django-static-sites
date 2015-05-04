@@ -132,4 +132,4 @@ STATICSITE_DEFAULT_FILE_STORAGE = {
 }
 
 from staticsites.utilities import invalidate_paths
-STATICSITE_AFTER_DEPLOY = invalidate_paths
+STATICSITE_AFTER_DEPLOY = {'': None, 'test': invalidate_paths}
