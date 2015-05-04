@@ -1,8 +1,10 @@
+
 __author__ = 'Christian Bianciotto'
 
 
-from genericpath import isfile, getmtime
+import gzip
 import logging
+from genericpath import isfile, getmtime
 from os import listdir
 from datetime import datetime
 from models import DeployOperation
@@ -334,6 +336,37 @@ def copy_file(path, sub_path, storage, deploy, paths):
         dpo.save()
 
         paths.append(sub_path)
+    finally:
+        if file:
+            file.close()
+
+def read_file(path):
+    """
+    Helper function, read file content
+    :param path: The file path
+    :return: The file content
+    """
+    file = None
+    try:
+        file = open(path, 'r')
+
+        return file.read()
+    finally:
+        if file:
+            file.close()
+
+
+def read_gzip_file(path):
+    """
+    Helper function, read gzipped file content
+    :param path: The file path
+    :return: The file content
+    """
+    file = None
+    try:
+        file = gzip.open(path, 'r')
+
+        return file.read()
     finally:
         if file:
             file.close()
