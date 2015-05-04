@@ -1,11 +1,13 @@
+
 __author__ = 'Christian Bianciotto'
 
 
-from os.path import join
+from os.path import join, isfile
 from staticsites import conf
 from django.conf import settings
 from django.test import TestCase
 from staticsites import utilities
+from staticsites.deploy import deploy
 
 
 def reset(attr):
@@ -186,3 +188,48 @@ class TestUtilities(TestCase):
         self.assertEquals(settings.CONSTANT_1, settings.STATICSITE_SETTINGS['']['CONSTANT_1'])
         self.assertEquals(settings.CONSTANT_2, settings.STATICSITE_SETTINGS['']['CONSTANT_2'])
         self.assertEquals(settings.CONSTANT_3, settings.STATICSITE_SETTINGS['']['CONSTANT_3'])
+
+    def test_deploy(self):
+        reset_all()
+
+        deploy_type = 'test_deploy'
+
+        settings.STATICSITE_DEPLOY_ROOT = 'deploy/%(deploy_type)s'
+        settings.STATICSITE_STATICFILES_DIRS = (
+            ('staticsites/tests/examples/example1/static', ),
+        )
+
+        deploy(deploy_type)
+
+        self.assertTrue(isfile('deploy/%s/index.html' % deploy_type))
+        self.assertTrue(isfile('deploy/%s/js/test.js' % deploy_type))
+        self.assertTrue(isfile('deploy/%s/django.png' % deploy_type))
+
+        self.assertEquals(utilities.read_file('deploy/%s/index.html' % deploy_type),
+'''<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+
+    <script type="text/javascript" src="js/test.js"></script>
+
+    <title>Hello world!</title>
+</head>
+<body>
+    <h1>Hello world!</h1>
+    <h2>This is an example for deploy as <i>test_deploy</i>.</h2>
+
+    <p>
+        django-static-sites is powered by<br />
+        <img src="django.png" />
+    </p>
+</body>
+</html>''')
+
+        reset('STATICSITE_STATICFILES_DIRS')
+
+        deploy(deploy_type)
+
+        self.assertTrue(isfile('deploy/%s/index.html' % deploy_type))
+        self.assertTrue(isfile('deploy/%s/js/test.js' % deploy_type))
+        self.assertFalse(isfile('deploy/%s/django.png' % deploy_type))
