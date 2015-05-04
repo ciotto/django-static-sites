@@ -1,3 +1,4 @@
+from boto.cloudfront import CloudFrontConnection
 
 __author__ = 'Christian Bianciotto'
 
@@ -375,3 +376,22 @@ def read_gzip_file(path):
     finally:
         if file:
             file.close()
+
+
+def invalidate_paths(deploy_type, paths, *args, **kwargs):
+    """
+    Helper function, create an invalidation request for CloudFront distribution
+    :param deploy_type: The deploy type
+    :param paths: The paths array
+    """
+    distributions = get_conf('AWS_DISTRIBUTION_ID', deploy_type)
+
+    if isinstance(distributions, list):
+        distributions = distributions
+    else:
+        distributions = [distributions]
+
+    for distribution in distributions:
+        conn_cf = CloudFrontConnection(get_conf('AWS_ACCESS_KEY_ID', deploy_type),
+                                       get_conf('AWS_SECRET_ACCESS_KEY', deploy_type))
+        conn_cf.create_invalidation_request(distribution, paths)

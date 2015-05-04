@@ -110,6 +110,8 @@ STATICSITE_STATICFILES_DIRS = (
 # S3BotoStorage configuration
 AWS_ACCESS_KEY_ID = 'YOUR_AWS_ACCESS_KEY_ID'
 AWS_SECRET_ACCESS_KEY = 'YOUR_AWS_SECRET_ACCESS_KEY'
+AWS_DISTRIBUTION_ID = 'YOUR_CLOUDFRONT_DISTRIBUTION_ID'
+
 AWS_STORAGE_BUCKET_NAME = 'django-static-sites-test'
 
 
@@ -120,11 +122,14 @@ from django.core.files.storage import FileSystemStorage
 from staticsites.tests.examples.example1.storage import ExampleFileSystemStorage
 from storages.backends.s3boto import S3BotoStorage
 STATICSITE_DEFAULT_FILE_STORAGE = {
-    'dev': [
+    '': [
         FileSystemStorage,
         ExampleFileSystemStorage,
     ],
-    '': [
+    'test': [
         S3BotoStorage,
     ]
 }
+
+from staticsites.utilities import invalidate_paths
+STATICSITE_AFTER_DEPLOY = invalidate_paths
