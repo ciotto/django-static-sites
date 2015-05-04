@@ -315,3 +315,28 @@ function log(message) {
 
         self.assertEquals(minify.js(js), js_min)
         self.assertEquals(minify.js(js, comment), ('/* %s */\n' % comment) + js_min)
+
+    def test_deploy_before_after(self):
+        reset_all()
+
+        deploy_type = 'test_deploy'
+
+        def before(*args, **kwargs):
+            sequence.append('before')
+
+        def after(*args, **kwargs):
+            sequence.append('after')
+
+        sequence = []
+        deploy(deploy_type)
+        self.assertEquals(sequence, [])
+
+        sequence = []
+        settings.STATICSITE_BEFORE_DEPLOY = before
+        deploy(deploy_type)
+        self.assertEquals(sequence, ['before'])
+
+        sequence = []
+        settings.STATICSITE_AFTER_DEPLOY = after
+        deploy(deploy_type)
+        self.assertEquals(sequence, ['before', 'after'])

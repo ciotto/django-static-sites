@@ -296,12 +296,15 @@ def iterate_dir(path, callback, ignore=None, *args, **kwargs):
     _iterate_dir(path, "", callback, ignore, *args, **kwargs)
 
 
-def copy_file(path, sub_path, storage, deploy, paths):
+def copy_file(path, sub_path, storage, deploy, paths, dpos):
     """
     Copy the file in path/sub_path in the storage sub_path
     :param path: The root path
     :param sub_path: The sub_path
     :param storage: The storage
+    :param deploy: The deploy
+    :param paths: The paths array
+    :param dpos: The DeployOperations array
     """
     full_path = join(path, sub_path)
 
@@ -335,7 +338,9 @@ def copy_file(path, sub_path, storage, deploy, paths):
                               file_stogare=storage.__class__.__module__ + '.' + storage.__class__.__name__)
         dpo.save()
 
-        paths.append(sub_path)
+        if sub_path not in paths:
+            paths.append(sub_path)
+        dpos.append(dpo)
     finally:
         if file:
             file.close()

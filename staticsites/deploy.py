@@ -34,9 +34,16 @@ def deploy(deploy_type=utilities.get_conf('STATICSITE_DEFAULT_DEPLOY_TYPE')):
     dp = Deploy(type=deploy_type)
     dp.save()
 
+    before_deploy = utilities.get_conf('STATICSITE_BEFORE_DEPLOY', deploy_type)
+    after_deploy = utilities.get_conf('STATICSITE_AFTER_DEPLOY', deploy_type)
+
+    if before_deploy:
+        before_deploy(deploy_type=deploy_type, deploy=dp)
+
     utilities.set_settings(deploy_type)
 
     paths = []
+    dpos = []
 
     # Create deploy root
     deploy_root = utilities.get_deploy_root(deploy_type)
@@ -91,6 +98,7 @@ def deploy(deploy_type=utilities.get_conf('STATICSITE_DEFAULT_DEPLOY_TYPE')):
 
                         content = response.content
 
+<<<<<<< HEAD
                         new_dpo = DeployOperation(deploy=dp,
                                                   file_type='D',
                                                   operation_type='N',
@@ -133,6 +141,47 @@ def deploy(deploy_type=utilities.get_conf('STATICSITE_DEFAULT_DEPLOY_TYPE')):
                                     file.close()
 
                         new_dpo.save()
+=======
+                        for storage in storages:
+                            new_dpo = DeployOperation(deploy=dp,
+                                                      file_type='D',
+                                                      operation_type='N',
+                                                      path=path,
+                                                      hash=hashlib.sha512(content).hexdigest(),
+                                                      file_stogare=storage.__class__.__module__ + '.' + storage.__class__.__name__)
+
+                            if storage.exists(path):
+                                # Check if need update by checking stored hash
+                                last_dpo = None
+                                if last_dp:
+                                    deploy_operations = DeployOperation.objects.filter(path=path, deploy=last_dp)
+                                    if deploy_operations:
+                                        last_dpo = deploy_operations[0]
+
+                                if last_dpo and last_dpo.hash and new_dpo.hash == last_dpo.hash:
+                                    new_dpo.operation_type = 'NU'
+                                    logging.info('File %s not updated' % path)
+                                else:
+                                    storage.delete(path)
+                                    new_dpo.operation_type = 'U'
+
+                            if new_dpo.operation_type is not 'NU':
+                                file = None
+                                try:
+                                    file = io.BytesIO(content)
+                                    storage.save(path, file)
+
+                                    if new_dpo.operation_type is 'U':
+                                        logging.info('Update file %s' % path)
+                                    else:
+                                        logging.info('Create dynamic file %s' % path)
+                                finally:
+                                    if file:
+                                        file.close()
+
+                            new_dpo.save()
+                            dpos.append(new_dpo)
+>>>>>>> 6c3f0a2... add before and after deploy function call
 
                         paths.append(path)
             except ImportError:
@@ -153,3 +202,7 @@ def deploy(deploy_type=utilities.get_conf('STATICSITE_DEFAULT_DEPLOY_TYPE')):
                                       hash=path.hash,
                                       file_stogare=path.file_stogare)
             new_dpo.save()
+            paths.append(path)
+
+    if after_deploy:
+        after_deploy(deploy_type=deploy_type, deploy=dp, paths=paths, deploy_operations=dpos)
