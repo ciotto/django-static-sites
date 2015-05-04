@@ -2,11 +2,9 @@ __author__ = 'Christian Bianciotto'
 
 
 import gzip
-import logging
-from genericpath import isfile, getmtime
+from os.path import isfile
 from os import listdir
 from datetime import datetime
-from models import DeployOperation
 
 from staticsites.minify import xml
 from inspect import isfunction
@@ -283,55 +281,6 @@ def iterate_dir(path, callback, ignore=None, *args, **kwargs):
 
     _iterate_dir(path, "", callback, ignore, *args, **kwargs)
 
-
-def copy_file(path, sub_path, storage, deploy, paths, dpos):
-    """
-    Copy the file in path/sub_path in the storage sub_path
-    :param path: The root path
-    :param sub_path: The sub_path
-    :param storage: The storage
-    :param deploy: The deploy
-    :param paths: The paths array
-    :param dpos: The DeployOperations array
-    """
-    full_path = join(path, sub_path)
-
-    file = None
-    try:
-        skip = False
-        operation_type = 'N'
-
-        if storage.exists(sub_path):
-            # Check if need update by checking modification date
-            if datetime.fromtimestamp(getmtime(full_path)) > storage.modified_time(sub_path):
-                storage.delete(sub_path)
-                operation_type = 'U'
-            else:
-                operation_type = 'NU'
-                logging.info('File %s not updated' % path)
-
-        if operation_type is not 'NU':
-            file = open(full_path, 'r')
-            storage.save(sub_path, file)
-
-            if operation_type is 'U':
-                logging.info('Update file %s' % sub_path)
-            else:
-                logging.info('Create dynamic file %s' % sub_path)
-
-        dpo = DeployOperation(deploy=deploy,
-                              file_type='S',
-                              operation_type=operation_type,
-                              path=sub_path,
-                              file_stogare=storage.__class__.__module__ + '.' + storage.__class__.__name__)
-        dpo.save()
-
-        if sub_path not in paths:
-            paths.append(sub_path)
-        dpos.append(dpo)
-    finally:
-        if file:
-            file.close()
 
 def read_file(path):
     """

@@ -3,9 +3,9 @@ __author__ = 'Christian Bianciotto'
 
 from genericpath import exists
 from os import makedirs
-from os.path import abspath
-from datetime import datetime
+from os.path import abspath, join, getmtime
 from staticsites import utilities
+from datetime import datetime
 import hashlib
 import logging
 import io
@@ -20,189 +20,208 @@ from django.http import HttpRequest
 from models import DeployOperation, Deploy
 
 
-def deploy(deploy_type=utilities.get_conf('STATICSITE_DEFAULT_DEPLOY_TYPE')):
-    logging.basicConfig(
-        level=logging.DEBUG,
-        format='(%(threadName)-10s) %(message)s',
-    )
+class DefaultDeployUtilities:
+    def __init__(self, deploy_type):
+        self.deploy_type = deploy_type
+        self.deploy = None
+        self.storage = None
 
-    deploys = Deploy.objects.filter(type=deploy_type).order_by('-id')
-    last_dp = None
-    if len(deploys):
-        last_dp = deploys[0]
+        self.paths = []
+        self.deploy_operations = []
 
-    dp = Deploy(type=deploy_type)
-    dp.save()
+    def copy(self, path, sub_path):
+        full_path = join(path, sub_path)
 
-    before_deploy = utilities.get_conf('STATICSITE_BEFORE_DEPLOY', deploy_type)
-    after_deploy = utilities.get_conf('STATICSITE_AFTER_DEPLOY', deploy_type)
+        file = None
+        try:
+            skip = False
+            operation_type = 'N'
 
-    if before_deploy:
-        before_deploy(deploy_type=deploy_type, deploy=dp)
+            if self.storage.exists(sub_path):
+                # Check if need update by checking modification date
+                if datetime.fromtimestamp(getmtime(full_path)) > self.storage.modified_time(sub_path):
+                    self.storage.delete(sub_path)
+                    operation_type = 'U'
+                else:
+                    operation_type = 'NU'
+                    logging.info('File %s not updated' % path)
 
-    utilities.set_settings(deploy_type)
+            if operation_type is not 'NU':
+                file = open(full_path, 'r')
+                self.storage.save(sub_path, file)
 
-    paths = []
-    dpos = []
+                if operation_type is 'U':
+                    logging.info('Update file %s' % sub_path)
+                else:
+                    logging.info('Create dynamic file %s' % sub_path)
 
-    # Create deploy root
-    deploy_root = utilities.get_deploy_root(deploy_type)
-    if not exists(deploy_root):
-        makedirs(deploy_root)
+            dpo = DeployOperation(deploy=self.deploy,
+                                  file_type='S',
+                                  operation_type=operation_type,
+                                  path=sub_path,
+                                  file_stogare=self.storage.__class__.__module__ + '.' +
+                                               self.storage.__class__.__name__)
+            dpo.save()
 
-    # Copy static files
-    staticfiles_dirs = utilities.get_conf('STATICSITE_STATICFILES_DIRS', deploy_type)
-    if staticfiles_dirs:
-        if isinstance(staticfiles_dirs, basestring):
-            raise AssertionError("type %s is not iterable" % type(staticfiles_dirs))
+            if sub_path not in self.paths:
+                self.paths.append(sub_path)
+            self.deploy_operations.append(dpo)
+        finally:
+            if file:
+                file.close()
 
-        for staticfiles_dir in staticfiles_dirs:
-            if isinstance(staticfiles_dir, basestring):
-                raise AssertionError("type %s is not iterable" % type(staticfiles_dir))
+    def start(self):
+        logging.basicConfig(
+            level=logging.DEBUG,
+            format='(%(threadName)-10s) %(message)s',
+        )
 
-            path = abspath(staticfiles_dir[0])
-            if len(staticfiles_dir) > 1:
-                file_storage = staticfiles_dir[1]
-                file_storage = utilities.get_file_storage(file_storage, deploy_type)
-            else:
-                file_storage = utilities.get_file_storage(None, deploy_type)
+        deploys = Deploy.objects.filter(type=self.deploy_type).order_by('-id')
+        last_dp = None
+        if len(deploys):
+            last_dp = deploys[0]
 
-            storage = file_storage(deploy_root)
+        self.deploy = Deploy(type=self.deploy_type)
+        self.deploy.save()
 
-            utilities.iterate_dir(path, utilities.copy_file, None, storage, dp, paths)
+        before_deploy = utilities.get_conf('STATICSITE_BEFORE_DEPLOY', self.deploy_type)
+        after_deploy = utilities.get_conf('STATICSITE_AFTER_DEPLOY', self.deploy_type)
 
-    # Create dynamic files
-    for appname in settings.INSTALLED_APPS:
-        if appname != 'staticsites':
-            try:
-                views = import_module(appname + '.views')
+        if before_deploy:
+            before_deploy(deploy_type=self.deploy_type, deploy=self.deploy)
 
-                for func_name, function in getmembers(views, isfunction):
-                    if hasattr(function, 'is_static_view') and function.is_static_view:
-                        path = function.path
-                        minify = function.minify
-                        gzip = function.gzip
-                        file_storage = function.file_storage
+        utilities.set_settings(self.deploy_type)
 
-                        path = utilities.get_path(path, func_name, deploy_type)
-                        minify = utilities.get_minify(minify, path, deploy_type)
-                        gzip = utilities.get_gzip(gzip, deploy_type)
-                        file_storage = utilities.get_file_storage(file_storage, deploy_type)
+        # Create deploy root
+        deploy_root = utilities.get_deploy_root(self.deploy_type)
+        if not exists(deploy_root):
+            makedirs(deploy_root)
 
-                        if 'deploy_type' in function.func_code.co_varnames:
-                            response = function(HttpRequest(), deploy_type)
-                        else:
-                            response = function(HttpRequest())
+        # Copy static files
+        staticfiles_dirs = utilities.get_conf('STATICSITE_STATICFILES_DIRS', self.deploy_type)
+        if staticfiles_dirs:
+            if isinstance(staticfiles_dirs, basestring):
+                raise AssertionError("type %s is not iterable" % type(staticfiles_dirs))
 
-                        storage = file_storage(deploy_root)
+            for staticfiles_dir in staticfiles_dirs:
+                if isinstance(staticfiles_dir, basestring):
+                    raise AssertionError("type %s is not iterable" % type(staticfiles_dir))
 
-                        content = response.content
+                path = abspath(staticfiles_dir[0])
+                if len(staticfiles_dir) > 1:
+                    file_storage = staticfiles_dir[1]
+                    storages = utilities.get_storages(file_storage=file_storage,
+                                                    deploy_type=self.deploy_type,
+                                                    location=deploy_root)
+                else:
+                    storages = utilities.get_storages(file_storage=None,
+                                                    deploy_type=self.deploy_type,
+                                                    location=deploy_root)
 
-<<<<<<< HEAD
-                        new_dpo = DeployOperation(deploy=dp,
-                                                  file_type='D',
-                                                  operation_type='N',
-                                                  path=path,
-                                                  hash=hashlib.sha512(content).hexdigest(),
-                                                  file_stogare=storage.__class__.__module__ + '.' + storage.__class__.__name__)
+                for storage in storages:
+                    self.storage = storage
+                    utilities.iterate_dir(path, self.copy)
 
-                        if storage.exists(path):
-                            # Check if need update by checking stored hash
-                            last_dpo = None
-                            if last_dp:
-                                dpos = DeployOperation.objects.filter(path=path, deploy=last_dp)
-                                if dpos:
-                                    last_dpo = dpos[0]
+        # Create dynamic files
+        for appname in settings.INSTALLED_APPS:
+            if appname != 'staticsites':
+                try:
+                    views = import_module(appname + '.views')
 
-                            if last_dpo and last_dpo.hash and new_dpo.hash == last_dpo.hash:
-                                print 'skip'
-                                new_dpo.operation_type = 'NU'
-                                logging.info('File %s not updated' % path)
+                    for func_name, function in getmembers(views, isfunction):
+                        if hasattr(function, 'is_static_view') and function.is_static_view:
+                            path = function.path
+                            minify = function.minify
+                            gzip = function.gzip
+                            file_storage = function.file_storage
+
+                            path = utilities.get_path(path, func_name, self.deploy_type)
+                            minify = utilities.get_minify(minify, path, self.deploy_type)
+                            gzip = utilities.get_gzip(gzip, self.deploy_type)
+
+                            if 'deploy_type' in function.func_code.co_varnames:
+                                response = function(HttpRequest(), self.deploy_type)
                             else:
-                                print 'delete'
-                                storage.delete(path)
-                                new_dpo.operation_type = 'U'
+                                response = function(HttpRequest())
 
-                        if new_dpo.operation_type is not 'NU':
-                            file = None
-                            try:
-                                file = io.BytesIO(content)
-                                storage.save(path, file)
+                            storages = utilities.get_storages(file_storage=file_storage,
+                                                            deploy_type=self.deploy_type,
+                                                            location=deploy_root)
 
-                                print path
-                                print content
+                            content = response.content
 
-                                if new_dpo.operation_type is 'U':
-                                    logging.info('Update file %s' % path)
-                                else:
-                                    logging.info('Create dynamic file %s' % path)
-                            finally:
-                                if file:
-                                    file.close()
+                            for storage in storages:
+                                self.storage = storage
+                                new_dpo = DeployOperation(deploy=self.deploy,
+                                                          file_type='D',
+                                                          operation_type='N',
+                                                          path=path,
+                                                          hash=hashlib.sha512(content).hexdigest(),
+                                                          file_stogare=self.storage.__class__.__module__ + '.' +
+                                                                       self.storage.__class__.__name__)
 
-                        new_dpo.save()
-=======
-                        for storage in storages:
-                            new_dpo = DeployOperation(deploy=dp,
-                                                      file_type='D',
-                                                      operation_type='N',
-                                                      path=path,
-                                                      hash=hashlib.sha512(content).hexdigest(),
-                                                      file_stogare=storage.__class__.__module__ + '.' + storage.__class__.__name__)
+                                if storage.exists(path):
+                                    # Check if need update by checking stored hash
+                                    last_dpo = None
+                                    if last_dp:
+                                        deploy_operations = DeployOperation.objects.filter(path=path, deploy=last_dp)
+                                        if deploy_operations:
+                                            last_dpo = deploy_operations[0]
 
-                            if storage.exists(path):
-                                # Check if need update by checking stored hash
-                                last_dpo = None
-                                if last_dp:
-                                    deploy_operations = DeployOperation.objects.filter(path=path, deploy=last_dp)
-                                    if deploy_operations:
-                                        last_dpo = deploy_operations[0]
-
-                                if last_dpo and last_dpo.hash and new_dpo.hash == last_dpo.hash:
-                                    new_dpo.operation_type = 'NU'
-                                    logging.info('File %s not updated' % path)
-                                else:
-                                    storage.delete(path)
-                                    new_dpo.operation_type = 'U'
-
-                            if new_dpo.operation_type is not 'NU':
-                                file = None
-                                try:
-                                    file = io.BytesIO(content)
-                                    storage.save(path, file)
-
-                                    if new_dpo.operation_type is 'U':
-                                        logging.info('Update file %s' % path)
+                                    if last_dpo and last_dpo.hash and new_dpo.hash == last_dpo.hash:
+                                        new_dpo.operation_type = 'NU'
+                                        logging.info('File %s not updated' % path)
                                     else:
-                                        logging.info('Create dynamic file %s' % path)
-                                finally:
-                                    if file:
-                                        file.close()
+                                        storage.delete(path)
+                                        new_dpo.operation_type = 'U'
 
-                            new_dpo.save()
-                            dpos.append(new_dpo)
->>>>>>> 6c3f0a2... add before and after deploy function call
+                                if new_dpo.operation_type is not 'NU':
+                                    file = None
+                                    try:
+                                        file = io.BytesIO(content)
+                                        storage.save(path, file)
 
-                        paths.append(path)
-            except ImportError:
-                logging.info('No views module for app %s' % appname)
+                                        if new_dpo.operation_type is 'U':
+                                            logging.info('Update file %s' % path)
+                                        else:
+                                            logging.info('Create dynamic file %s' % path)
+                                    finally:
+                                        if file:
+                                            file.close()
 
-    # Clean files
-    if last_dp:
-        removed_paths = DeployOperation.objects.filter(deploy=last_dp).exclude(Q(path__in=paths) | Q(operation_type='R'))
-        for path in removed_paths:
-            file_stogare_components = path.file_stogare.rsplit('.', 1)
-            file_storage = getattr(importlib.import_module(file_stogare_components[0]), file_stogare_components[1])
-            storage = file_storage(deploy_root)
-            storage.delete(path.path)
-            new_dpo = DeployOperation(deploy=dp,
-                                      file_type=path.file_type,
-                                      operation_type='R',
-                                      path=path.path,
-                                      hash=path.hash,
-                                      file_stogare=path.file_stogare)
-            new_dpo.save()
-            paths.append(path)
+                                new_dpo.save()
+                                self.deploy_operations.append(new_dpo)
 
-    if after_deploy:
-        after_deploy(deploy_type=deploy_type, deploy=dp, paths=paths, deploy_operations=dpos)
+                            if path not in self.paths:
+                                self.paths.append(path)
+                except ImportError:
+                    logging.info('No views module for app %s' % appname)
+
+        # Clean files
+        if last_dp:
+            removed_paths = DeployOperation.objects.filter(deploy=last_dp).exclude(Q(path__in=self.paths) | Q(operation_type='R'))
+            for path in removed_paths:
+                file_stogare_components = path.file_stogare.rsplit('.', 1)
+                file_storage = getattr(importlib.import_module(file_stogare_components[0]), file_stogare_components[1])
+                storage = file_storage(deploy_root)
+                storage.delete(path.path)
+                new_dpo = DeployOperation(deploy=self.deploy,
+                                          file_type=path.file_type,
+                                          operation_type='R',
+                                          path=path.path,
+                                          hash=path.hash,
+                                          file_stogare=path.file_stogare)
+                new_dpo.save()
+                self.deploy_operations.append(new_dpo)
+                if path not in self.paths:
+                    self.paths.append(path)
+
+        if after_deploy:
+            after_deploy(deploy_type=self.deploy_type)
+
+
+DeployUtilities = DefaultDeployUtilities
+
+
+def deploy(deploy_type=utilities.get_conf('STATICSITE_DEFAULT_DEPLOY_TYPE')):
+    DeployUtilities(deploy_type=deploy_type).start()
