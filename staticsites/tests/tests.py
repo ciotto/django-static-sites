@@ -1,3 +1,5 @@
+# coding=utf-8
+import minify
 
 __author__ = 'Christian Bianciotto'
 
@@ -90,7 +92,7 @@ class TestUtilities(TestCase):
         self.assertTrue(utilities.has_extension(join('foo', 'bar.html'), ['.htm', '.html']))
         self.assertFalse(utilities.has_extension(join('foo', 'bar.js'), ['.htm', '.html']))
 
-    def test_path(self):
+    def test_get_path(self):
         reset_all()
 
         # No path, use func_name (skip deploy_type)
@@ -128,7 +130,7 @@ class TestUtilities(TestCase):
         # If path is dict and key missing, raise KeyError
         self.assertRaises(KeyError, utilities.get_path, {'test': 'bar.html'}, None, 'demo')
 
-    def test_minify(self):
+    def test_get_minify(self):
         reset_all()
 
         self.assertEquals(utilities.get_minify(None, 'foo.html', 'demo'), conf.STATICSITE_MINIFY_XML[''])
@@ -233,3 +235,83 @@ class TestUtilities(TestCase):
         self.assertTrue(isfile('deploy/%s/index.html' % deploy_type))
         self.assertTrue(isfile('deploy/%s/js/test.js' % deploy_type))
         self.assertFalse(isfile('deploy/%s/django.png' % deploy_type))
+
+    def test_minify(self):
+        reset_all()
+
+        comment = 'My comment'
+
+        html = u'''
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+
+    <title>Test</title>
+</head>
+<body>
+    <p>
+    °é*§çé§ç:ç*
+    </p>
+</body>
+</html>
+'''
+        html_min = u'<!DOCTYPE html>\n<html lang="it"><head><meta charset="UTF-8"><title>Test</title></head><body>' \
+                   u'<p> °é*§çé§ç:ç* </p></body></html>'
+
+        self.assertEquals(minify.xml(html), html_min)
+        self.assertEquals(minify.xml(html, comment), ('<!-- %s -->\n' % comment) + html_min)
+
+        css = u'''
+/* comment
+*/
+@-ms-viewport { width: device-width; }
+@media only screen and (min-device-width: 800px) {
+    html {
+        overflow: hidden;
+    }
+}
+
+html {
+    height: 100%;
+
+
+    width: 100%;
+}
+
+a {
+    color:      #e21f18;
+}
+
+#test, .test     {
+    width: 100%;
+
+
+    height: 100%;
+    background: url("°é*§çé§ç:ç*.png");
+}
+
+'''
+        css_min = u'@-ms-viewport{width:device-width}' \
+                  u'@media only screen and (min-device-width:800px){html{overflow:hidden}}html{height:100%;width:100%}' \
+                  u'a{color:#e21f18}#test,.test{width:100%;height:100%;background:url("°é*§çé§ç:ç*.png")}'
+
+        self.assertEquals(minify.css(css), css_min)
+        self.assertEquals(minify.css(css, comment), ('/* %s */\n' % comment) + css_min)
+
+        js = u'''
+/* comment
+*/
+// comment
+function log(message) {
+    if (DEBUG && console && console.log) {
+        console.log(message);
+        console.log('°é*§çé§ç:ç*');
+    }
+}
+'''
+        js_min = u'function log(message){if(DEBUG&&console&&console.log){console.log(message);' \
+                 u'console.log(\'°é*§çé§ç:ç*\');}}'
+
+        self.assertEquals(minify.js(js), js_min)
+        self.assertEquals(minify.js(js, comment), ('/* %s */\n' % comment) + js_min)
