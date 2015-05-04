@@ -1,5 +1,3 @@
-from boto.cloudfront import CloudFrontConnection
-
 __author__ = 'Christian Bianciotto'
 
 
@@ -15,6 +13,7 @@ from inspect import isfunction
 from staticsites import conf
 from os.path import splitext, join
 from django.conf import settings
+from boto.cloudfront import CloudFrontConnection
 
 
 def get(dictionary, key, default=None):
@@ -168,32 +167,20 @@ def get_path(path, func_name, deploy_type=get_default_deploy_type()):
 
 def get_minify(minify, path, deploy_type=get_default_deploy_type()):
     """
-    Return True or minify function if file can be minified
+    Return the correct minify function for file extension or None
     :param minify: The input value or dict or minify function
     :param path: The path
     :param deploy_type: The deploy type
-    :return: in order, minify function, minify[deploy_type] or minify[''] or get_conf('STATICSITE_MINIFY_') for correct
-        extension
+    :return: get_conf('STATICSITE_MINIFY', deploy_type, minify)[extension]
     """
-    if minify and isfunction(minify):
-        return minify
-    else:
-        if isinstance(minify, dict):
-            return get(minify, deploy_type)
-        # Use == for exclude empty array
-        elif minify is None:
-            if is_xml(path):
-                minify = get_conf('STATICSITE_MINIFY_XML', deploy_type)
-            elif is_css(path):
-                minify = get_conf('STATICSITE_MINIFY_CSS', deploy_type)
-            elif is_js(path):
-                minify = get_conf('STATICSITE_MINIFY_JS', deploy_type)
-            else:
-                minify = False
+    minify = get_conf('STATICSITE_MINIFY', deploy_type, minify)
 
-        return minify
+    if isinstance(minify, dict):
+        file_name, file_extension = splitext(path)
 
-    # return False
+        return get(minify, file_extension, None)
+
+    return minify
 
 
 def get_gzip(gzip, deploy_type=get_default_deploy_type()):

@@ -131,21 +131,23 @@ class TestUtilities(TestCase):
         self.assertRaises(KeyError, utilities.get_path, {'test': 'bar.html'}, None, 'demo')
 
     def test_get_minify(self):
+        def func1():
+            pass
+
+        def func2():
+            pass
+
+        def func3():
+            pass
+
         reset_all()
 
-        self.assertEquals(utilities.get_minify(None, 'foo.html', 'demo'), conf.STATICSITE_MINIFY_XML[''])
-        self.assertEquals(utilities.get_minify(None, 'foo.css', 'demo'), conf.STATICSITE_MINIFY_CSS[''])
-        self.assertEquals(utilities.get_minify(None, 'foo.js', 'demo'), conf.STATICSITE_MINIFY_JS[''])
+        self.assertEquals(utilities.get_minify(None, 'foo.html', 'demo'), conf.STATICSITE_MINIFY['.html'])
+        self.assertEquals(utilities.get_minify(None, 'foo.css', 'demo'), conf.STATICSITE_MINIFY['.css'])
+        self.assertEquals(utilities.get_minify(None, 'foo.js', 'demo'), conf.STATICSITE_MINIFY['.js'])
 
-        self.assertTrue(utilities.get_minify(True, 'foo.html', None))
-        self.assertFalse(utilities.get_minify(False, 'foo.html', None))
-        self.assertTrue(utilities.get_minify(True, 'foo.bar', None))
-
-
-        self.assertTrue(utilities.get_minify({'test': True, '': False}, 'foo.html', 'test'))
-        self.assertFalse(utilities.get_minify({'test': False, '': True}, 'foo.html', 'test'))
-        self.assertFalse(utilities.get_minify({'test': True, '': False}, 'foo.html', 'demo'))
-        self.assertTrue(utilities.get_minify({'test': False, '': True}, 'foo.html', 'demo'))
+        self.assertEquals(utilities.get_minify({'test': func1, '': func2}, 'foo.html', 'test'), func1)
+        self.assertEquals(utilities.get_minify({'test': func1, '': func2}, 'foo.html', 'demo'), func2)
 
         # If minify is dict and key missing, raise KeyError
         self.assertRaises(KeyError, utilities.get_minify, {'test': False}, 'foo.html', 'demo')
@@ -153,19 +155,28 @@ class TestUtilities(TestCase):
         self.assertRaises(KeyError, utilities.get_minify, {'test': False}, 'foo.css', 'demo')
 
         # If minify is false, return correct value from settings
-        settings.STATICSITE_MINIFY_XML = {'test': True, '': False}
-        settings.STATICSITE_MINIFY_CSS = {'test': False, '': True}
-        settings.STATICSITE_MINIFY_JS = {'test': False, '': False}
-        self.assertEquals(utilities.get_minify(None, 'foo.html', 'test'), settings.STATICSITE_MINIFY_XML['test'])
-        self.assertEquals(utilities.get_minify(None, 'foo.css', 'test'), settings.STATICSITE_MINIFY_CSS['test'])
-        self.assertEquals(utilities.get_minify(None, 'foo.js', 'test'), settings.STATICSITE_MINIFY_JS['test'])
-        self.assertEquals(utilities.get_minify(None, 'foo.html', 'demo'), settings.STATICSITE_MINIFY_XML[''])
-        self.assertEquals(utilities.get_minify(None, 'foo.css', 'demo'), settings.STATICSITE_MINIFY_CSS[''])
-        self.assertEquals(utilities.get_minify(None, 'foo.js', 'demo'), settings.STATICSITE_MINIFY_JS[''])
+        settings.STATICSITE_MINIFY = {
+            'test': {
+                '.html': func1,
+                '.css': func2,
+                '.js': func3,
+            },
+            '': {
+                '.html': func2,
+                '.css': func3,
+                '.js': func1,
+            }
+        }
+        self.assertEquals(utilities.get_minify(None, 'foo.html', 'test'), settings.STATICSITE_MINIFY['test']['.html'])
+        self.assertEquals(utilities.get_minify(None, 'foo.css', 'test'), settings.STATICSITE_MINIFY['test']['.css'])
+        self.assertEquals(utilities.get_minify(None, 'foo.js', 'test'), settings.STATICSITE_MINIFY['test']['.js'])
+        self.assertEquals(utilities.get_minify(None, 'foo.html', 'demo'), settings.STATICSITE_MINIFY['']['.html'])
+        self.assertEquals(utilities.get_minify(None, 'foo.css', 'demo'), settings.STATICSITE_MINIFY['']['.css'])
+        self.assertEquals(utilities.get_minify(None, 'foo.js', 'demo'), settings.STATICSITE_MINIFY['']['.js'])
 
-        # If minify is True retur always True
-        self.assertTrue(utilities.get_minify(True, 'foo.bar', None))
-        self.assertTrue(utilities.get_minify(True, None, None))
+        # If minify is func retur always func
+        self.assertEquals(utilities.get_minify(func1, 'foo.bar', None), func1)
+        self.assertEquals(utilities.get_minify(func2, None, None), func2)
 
     def test_set_settings(self):
         settings.STATICSITE_SETTINGS = {
@@ -208,25 +219,7 @@ class TestUtilities(TestCase):
         self.assertTrue(isfile('deploy/%s/django.png' % deploy_type))
 
         self.assertEquals(utilities.read_file('deploy/%s/index.html' % deploy_type),
-'''<!DOCTYPE html>
-<html lang="it">
-<head>
-    <meta charset="UTF-8">
-
-    <script type="text/javascript" src="js/test.js"></script>
-
-    <title>Hello world!</title>
-</head>
-<body>
-    <h1>Hello world!</h1>
-    <h2>This is an example for deploy as <i>test_deploy</i>.</h2>
-
-    <p>
-        django-static-sites is powered by<br />
-        <img src="django.png" />
-    </p>
-</body>
-</html>''')
+                          open('deploy/%s/index.html' % deploy_type).read())
 
         reset('STATICSITE_STATICFILES_DIRS')
 
