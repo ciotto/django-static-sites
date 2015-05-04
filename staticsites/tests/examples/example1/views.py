@@ -6,7 +6,7 @@ from staticsites.utilities import get
 
 @staticview
 def index(request, deploy_type=None):
-    ctx = {'title': 'Hello world!', 'js_path': get(js__test.path, deploy_type)}
+    ctx = {'title': 'Hello world!', 'js_path': get(js__test.path, deploy_type), 'deploy_type': deploy_type}
 
     return render_to_response('index.html', ctx, context_instance=RequestContext(request))
 
