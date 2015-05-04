@@ -11,6 +11,19 @@
     <h1>{{ title }}</h1>
     <h2>This is an example for deploy as <i>{{ deploy_type }}</i>.</h2>
 
+    <ul>
+        <li>Home</li>
+        <li><a href="static.html">Static page</a></li>
+    </ul>
+
+    <h4>The page source:</h4>
+    <xmp id="code">
+
+    </xmp>
+    <script type="text/javascript">
+        document.getElementById('code').textContent = document.documentElement.innerHTML;
+    </script>
+
     <p>
         django-static-sites is powered by<br />
         <img src="django.png" />
