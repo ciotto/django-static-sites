@@ -282,6 +282,22 @@ def iterate_dir(path, callback, ignore=None, *args, **kwargs):
     _iterate_dir(path, "", callback, ignore, *args, **kwargs)
 
 
+def read_binary(path):
+    """
+    Helper function, read binary file content
+    :param path: The file path
+    :return: The file content
+    """
+    file = None
+    try:
+        file = open(path, 'r')
+
+        return file.read()
+    finally:
+        if file:
+            file.close()
+
+
 def read_file(path):
     """
     Helper function, read file content
@@ -290,7 +306,7 @@ def read_file(path):
     """
     file = None
     try:
-        file = open(path, 'r')
+        file = codecs.open(path, 'rb', 'UTF-8')
 
         return file.read()
     finally:
@@ -320,6 +336,7 @@ def invalidate_paths(deploy_type, paths, *args, **kwargs):
     :param deploy_type: The deploy type
     :param paths: The paths array
     """
+    # TODO chunking invalidation to prevent error
     distributions = get_conf('AWS_DISTRIBUTION_ID', deploy_type)
 
     if isinstance(distributions, list):
