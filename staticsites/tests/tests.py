@@ -1,10 +1,11 @@
 # coding=utf-8
-import gzip
-from django.core.files.storage import FileSystemStorage
-import minify
-
 __author__ = 'Christian Bianciotto'
 
+
+import gzip
+from django.core.files.storage import FileSystemStorage
+from conf_dict import BaseDict, DeployTypes, Apps, Extensions
+import minify
 
 from os.path import join, isfile
 from staticsites import conf
@@ -41,6 +42,48 @@ def reset_all():
 
 
 class TestUtilities(TestCase):
+    def test_dict(self):
+        d = BaseDict({'foo': 'foo'})
+        self.assertRaises(KeyError, d.__getitem__, 'bar')
+
+        d[''] = 'bar'
+        self.assertEqual(d['bar'], d[''])
+
+        d = Apps({
+            'foo': DeployTypes({
+                'bar': Extensions({
+                    'foo': 1,
+                    'bar': 2,
+                    'qwe': 3,
+                    '': 4,
+                }),
+                'qwe': 5,
+                '': Extensions({
+                    'foo': 6,
+                    'bar': 7,
+                    'qwe': 8,
+                    '': 9,
+                }),
+            }),
+            'bar': Extensions({
+                'foo': 10,
+                'bar': 11,
+                'qwe': 12,
+                '': 13,
+            }),
+            'qwe': 14,
+            '': 15,
+        })
+
+        self.assertEqual(d.get(), d[''])
+        self.assertEqual(d.get(app='foo'), d['foo'][''][''])
+        self.assertEqual(d.get(app='foo', deploy_type='bar'), d['foo']['bar'][''])
+        self.assertEqual(d.get(app='foo', deploy_type='bar', extension='foo'), d['foo']['bar']['foo'])
+        self.assertEqual(d.get(app='foo', extension='foo'), d['foo']['']['foo'])
+        self.assertEqual(d.get(app='foo', deploy_type='foo'), d['foo'][''][''])
+
+
+
     def test_get(self):
         reset_all()
 
