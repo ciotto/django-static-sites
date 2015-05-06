@@ -1,6 +1,9 @@
 __author__ = 'Christian Bianciotto'
 
 
+from StringIO import StringIO
+from gzip import GzipFile
+
 from genericpath import exists
 from os import makedirs
 from os.path import abspath, join, getmtime
@@ -32,9 +35,12 @@ class DefaultDeployUtilities:
     def copy(self, path, sub_path):
         full_path = join(path, sub_path)
 
+        minify = utilities.get_minify(None, sub_path, self.deploy_type)
+
+        gzip = utilities.get_gzip(None, self.deploy_type)
+
         file = None
         try:
-            skip = False
             operation_type = 'N'
 
             if self.storage.exists(sub_path):
@@ -47,7 +53,24 @@ class DefaultDeployUtilities:
                     logging.info('File %s not updated' % path)
 
             if operation_type is not 'NU':
-                file = open(full_path, 'r')
+                if minify or gzip:
+                    if minify:
+                        content = utilities.read_file(full_path)
+                        content = minify(content)
+                    else:
+                        content = utilities.read_binary(full_path)
+
+                    if gzip:
+                        #TODO gzip config discriminate extension
+                        #TODO append .gz extension (config)
+                        file = StringIO()
+                        gzip_file = GzipFile(fileobj=file, mode="w")
+                        gzip_file.write(content)
+                        gzip_file.close()
+                    else:
+                        file = io.StringIO(content)
+                else:
+                    file = open(full_path, 'r')
                 self.storage.save(sub_path, file)
 
                 if operation_type is 'U':
