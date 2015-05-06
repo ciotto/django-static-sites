@@ -1,4 +1,5 @@
 from django.core.files.storage import FileSystemStorage
+import conf_dict
 from staticsites import minify
 
 __author__ = 'Christian Bianciotto'
@@ -9,8 +10,6 @@ STATICSITE_DEPLOY_ROOT_DATE_FORMAT = '%Y-%m-%d_%H.%M.%S'
 
 STATICSITE_BEFORE_DEPLOY = None
 STATICSITE_AFTER_DEPLOY = None
-
-STATICSITE_SETTINGS = {}
 
 STATICSITE_DEFAULT_DEPLOY_TYPE = 'dev'
 STATICSITE_DEFAULT_INDEX = 'index.html'

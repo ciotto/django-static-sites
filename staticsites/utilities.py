@@ -273,17 +273,6 @@ def get_default_index(deploy_type=get_default_deploy_type()):
     return get_conf('STATICSITE_DEFAULT_INDEX', deploy_type)
 
 
-def set_settings(deploy_type=get_default_deploy_type()):
-    """
-    Set the correct setting.py constants for deploy_type
-    :param deploy_type: The deploy type
-    """
-    staticsite_settings = get_conf('STATICSITE_SETTINGS', deploy_type)
-
-    for key, value in staticsite_settings.iteritems():
-        setattr(settings, key, value)
-
-
 def iterate_dir(path, callback, ignore=None, *args, **kwargs):
     """
     Recursive function, iterate file and call the callback function by passing root path, sub_path and extra args/kwargs

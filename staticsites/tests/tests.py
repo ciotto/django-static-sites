@@ -24,14 +24,8 @@ def reset_all():
 
     reset('STATICSITE_DEPLOY_ROOT_DATE_FORMAT')
 
-    reset('STATICSITE_SETTINGS')
-
     reset('STATICSITE_DEFAULT_DEPLOY_TYPE')
     reset('STATICSITE_DEFAULT_INDEX')
-
-    reset('STATICSITE_MINIFY_XML')
-    reset('STATICSITE_MINIFY_CSS')
-    reset('STATICSITE_MINIFY_JS')
 
     reset('STATICSITE_GZIP')
 
@@ -180,30 +174,6 @@ class TestUtilities(TestCase):
         # If minify is func retur always func
         self.assertEquals(utilities.get_minify(func1, 'foo.bar', None), func1)
         self.assertEquals(utilities.get_minify(func2, None, None), func2)
-
-    def test_set_settings(self):
-        settings.STATICSITE_SETTINGS = {
-            'test': {
-                'CONSTANT_1': 1,
-                'CONSTANT_2': 2,
-                'CONSTANT_3': 3,
-                },
-            '': {
-                'CONSTANT_1': 4,
-                'CONSTANT_2': 5,
-                'CONSTANT_3': 6,
-                }
-        }
-
-        utilities.set_settings('test')
-        self.assertEquals(settings.CONSTANT_1, settings.STATICSITE_SETTINGS['test']['CONSTANT_1'])
-        self.assertEquals(settings.CONSTANT_2, settings.STATICSITE_SETTINGS['test']['CONSTANT_2'])
-        self.assertEquals(settings.CONSTANT_3, settings.STATICSITE_SETTINGS['test']['CONSTANT_3'])
-
-        utilities.set_settings('demo')
-        self.assertEquals(settings.CONSTANT_1, settings.STATICSITE_SETTINGS['']['CONSTANT_1'])
-        self.assertEquals(settings.CONSTANT_2, settings.STATICSITE_SETTINGS['']['CONSTANT_2'])
-        self.assertEquals(settings.CONSTANT_3, settings.STATICSITE_SETTINGS['']['CONSTANT_3'])
 
     def test_deploy(self):
         reset_all()
