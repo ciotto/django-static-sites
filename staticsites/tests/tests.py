@@ -1,4 +1,5 @@
 # coding=utf-8
+import gzip
 from django.core.files.storage import FileSystemStorage
 import minify
 
@@ -227,8 +228,8 @@ class TestUtilities(TestCase):
         self.assertTrue(isfile('deploy/example/js/test.js'))
         self.assertTrue(isfile('deploy/example/django.png'))
 
-        self.assertEquals(utilities.read_file('deploy/%s/index.html' % deploy_type),
-                          open('deploy/%s/index.html' % deploy_type).read())
+        self.assertEquals(utilities.read_gzip_file('deploy/%s/index.html' % deploy_type),
+                          gzip.open('deploy/%s/index.html' % deploy_type).read())
 
         reset('STATICSITE_STATICFILES_DIRS')
 

@@ -169,6 +169,8 @@ class DefaultDeployUtilities:
                                                             location=deploy_root)
 
                             content = response.content
+                            if minify:
+                                content = minify(u'' + content)
 
                             for self.storage in storages:
 
@@ -197,7 +199,16 @@ class DefaultDeployUtilities:
                                 if new_dpo.operation_type is not 'NU':
                                     file = None
                                     try:
-                                        file = io.BytesIO(content)
+                                        if gzip:
+                                            #TODO gzip config discriminate extension
+                                            #TODO append .gz extension (config)
+                                            file = StringIO()
+                                            gzip_file = GzipFile(fileobj=file, mode="w")
+                                            gzip_file.write(content)
+                                            gzip_file.close()
+                                        else:
+                                            file = io.BytesIO(content)
+
                                         self.storage.save(path, file)
 
                                         if new_dpo.operation_type is 'U':

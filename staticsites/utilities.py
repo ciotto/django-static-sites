@@ -344,7 +344,7 @@ def read_file(path):
     """
     file = None
     try:
-        file = codecs.open(path, 'rb', 'UTF-8')
+        file = codecs.open(path, 'r', 'UTF-8')
 
         return file.read()
     finally:
