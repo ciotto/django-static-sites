@@ -348,3 +348,25 @@ def invalidate_paths(deploy_type, paths, *args, **kwargs):
         conn_cf = CloudFrontConnection(get_conf('AWS_ACCESS_KEY_ID', deploy_type),
                                        get_conf('AWS_SECRET_ACCESS_KEY', deploy_type))
         conn_cf.create_invalidation_request(distribution, paths)
+
+def dump_storage(storage):
+    """
+    Return a string by given storage
+    :param storage: The storage
+    :return: String dump of given storage
+    """
+    file = StringIO()
+    pickle.dump(storage, file)
+
+    return file.getvalue()
+
+def load_storage(string):
+    """
+    Return storage by dump string
+    :param string: The dump string
+    :return: Return storage
+    """
+    file = StringIO(string)
+
+    return pickle.load(file)
+
