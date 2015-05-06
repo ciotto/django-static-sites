@@ -1,6 +1,10 @@
+import pickle
+from StringIO import StringIO
+
 __author__ = 'Christian Bianciotto'
 
 
+import codecs
 import gzip
 from os.path import isfile
 from os import listdir
@@ -173,10 +177,13 @@ def get_minify(minify, path, deploy_type=get_default_deploy_type()):
     """
     minify = get_conf('STATICSITE_MINIFY', deploy_type, minify)
 
-    if isinstance(minify, dict):
+    if minify and isinstance(minify, dict):
         file_name, file_extension = splitext(path)
 
-        return get(minify, file_extension, None)
+        try:
+            return get(minify, file_extension, None)
+        except KeyError:
+            return None
 
     return minify
 
@@ -200,6 +207,37 @@ def get_file_storage(file_storage, deploy_type=get_default_deploy_type()):
     """
     return get_conf('STATICSITE_DEFAULT_FILE_STORAGE', deploy_type, file_storage)
 
+
+def get_storages(file_storage, deploy_type=get_default_deploy_type(), *args, **kwargs):
+    """
+    Return the correct storage instance for the input data and configuration
+    :param file_storage:  The input file_storage type or dict
+    :param deploy_type: The deploy type
+    :param args: args passed to the input file_storage
+    :param kwargs: kwargs passed to the input file_storage
+    :return: correct storage instance
+    """
+    file_storage = get_file_storage(file_storage, deploy_type)
+
+    if isinstance(file_storage, list):
+        file_storages = file_storage
+    else:
+        file_storages = [file_storage]
+
+    storages = []
+    for file_storage in file_storages:
+        if isinstance(file_storage, tuple):
+            if len(file_storage) == 2:
+                if file_storage[1]:
+                    kwargs.update(file_storage[1])
+
+                file_storage = file_storage[0]
+            else:
+                raise AttributeError('FileStorage tuple must contain FileStorage and **kwargs')
+
+        storages.append(file_storage(*args, **kwargs))
+
+    return storages
 
 def get_deploy_root(deploy_type=get_default_deploy_type()):
     """

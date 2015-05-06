@@ -14,7 +14,6 @@ import logging
 import io
 
 from inspect import getmembers, isfunction
-from django.utils import importlib
 from django.conf import settings
 from django.utils.module_loading import import_module
 from django.db.models import Q
@@ -82,8 +81,7 @@ class DefaultDeployUtilities:
                                   file_type='S',
                                   operation_type=operation_type,
                                   path=sub_path,
-                                  file_stogare=self.storage.__class__.__module__ + '.' +
-                                               self.storage.__class__.__name__)
+                                  storage=utilities.dump_storage(self.storage))
             dpo.save()
 
             if sub_path not in self.paths:
@@ -141,8 +139,7 @@ class DefaultDeployUtilities:
                                                     deploy_type=self.deploy_type,
                                                     location=deploy_root)
 
-                for storage in storages:
-                    self.storage = storage
+                for self.storage in storages:
                     utilities.iterate_dir(path, self.copy)
 
         # Create dynamic files
@@ -173,17 +170,16 @@ class DefaultDeployUtilities:
 
                             content = response.content
 
-                            for storage in storages:
-                                self.storage = storage
+                            for self.storage in storages:
+
                                 new_dpo = DeployOperation(deploy=self.deploy,
                                                           file_type='D',
                                                           operation_type='N',
                                                           path=path,
                                                           hash=hashlib.sha512(content).hexdigest(),
-                                                          file_stogare=self.storage.__class__.__module__ + '.' +
-                                                                       self.storage.__class__.__name__)
+                                                          storage=utilities.dump_storage(self.storage))
 
-                                if storage.exists(path):
+                                if self.storage.exists(path):
                                     # Check if need update by checking stored hash
                                     last_dpo = None
                                     if last_dp:
@@ -195,14 +191,14 @@ class DefaultDeployUtilities:
                                         new_dpo.operation_type = 'NU'
                                         logging.info('File %s not updated' % path)
                                     else:
-                                        storage.delete(path)
+                                        self.storage.delete(path)
                                         new_dpo.operation_type = 'U'
 
                                 if new_dpo.operation_type is not 'NU':
                                     file = None
                                     try:
                                         file = io.BytesIO(content)
-                                        storage.save(path, file)
+                                        self.storage.save(path, file)
 
                                         if new_dpo.operation_type is 'U':
                                             logging.info('Update file %s' % path)
@@ -224,16 +220,14 @@ class DefaultDeployUtilities:
         if last_dp:
             removed_paths = DeployOperation.objects.filter(deploy=last_dp).exclude(Q(path__in=self.paths) | Q(operation_type='R'))
             for path in removed_paths:
-                file_stogare_components = path.file_stogare.rsplit('.', 1)
-                file_storage = getattr(importlib.import_module(file_stogare_components[0]), file_stogare_components[1])
-                storage = file_storage(deploy_root)
+                storage = utilities.load_storage(path.storage)
                 storage.delete(path.path)
                 new_dpo = DeployOperation(deploy=self.deploy,
                                           file_type=path.file_type,
                                           operation_type='R',
                                           path=path.path,
                                           hash=path.hash,
-                                          file_stogare=path.file_stogare)
+                                          storage=path.storage)
                 new_dpo.save()
                 self.deploy_operations.append(new_dpo)
                 if path not in self.paths:

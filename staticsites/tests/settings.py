@@ -119,12 +119,11 @@ AWS_STORAGE_BUCKET_NAME = 'django-static-sites-test'
 STATICSITE_DEPLOY_ROOT = {'': 'deploy/%(deploy_type)s', 'test': '/'}
 
 from django.core.files.storage import FileSystemStorage
-from staticsites.tests.examples.example1.storage import ExampleFileSystemStorage
 from storages.backends.s3boto import S3BotoStorage
 STATICSITE_DEFAULT_FILE_STORAGE = {
     '': [
         FileSystemStorage,
-        ExampleFileSystemStorage,
+        (FileSystemStorage, {'location': 'deploy/example'}),
     ],
     'test': [
         S3BotoStorage,

@@ -1,4 +1,5 @@
 # coding=utf-8
+from django.core.files.storage import FileSystemStorage
 import minify
 
 __author__ = 'Christian Bianciotto'
@@ -145,6 +146,7 @@ class TestUtilities(TestCase):
         self.assertEquals(utilities.get_minify(None, 'foo.html', 'demo'), conf.STATICSITE_MINIFY['.html'])
         self.assertEquals(utilities.get_minify(None, 'foo.css', 'demo'), conf.STATICSITE_MINIFY['.css'])
         self.assertEquals(utilities.get_minify(None, 'foo.js', 'demo'), conf.STATICSITE_MINIFY['.js'])
+        self.assertIsNone(utilities.get_minify(None, 'foo.png', 'demo'))
 
         self.assertEquals(utilities.get_minify({'test': func1, '': func2}, 'foo.html', 'test'), func1)
         self.assertEquals(utilities.get_minify({'test': func1, '': func2}, 'foo.html', 'demo'), func2)
@@ -207,6 +209,10 @@ class TestUtilities(TestCase):
 
         deploy_type = 'test_deploy'
 
+        settings.STATICSITE_DEFAULT_FILE_STORAGE = [
+            FileSystemStorage,
+            (FileSystemStorage, {'location': 'deploy/example'}),
+        ]
         settings.STATICSITE_DEPLOY_ROOT = 'deploy/%(deploy_type)s'
         settings.STATICSITE_STATICFILES_DIRS = (
             ('staticsites/tests/examples/example1/static', ),
@@ -217,6 +223,9 @@ class TestUtilities(TestCase):
         self.assertTrue(isfile('deploy/%s/index.html' % deploy_type))
         self.assertTrue(isfile('deploy/%s/js/test.js' % deploy_type))
         self.assertTrue(isfile('deploy/%s/django.png' % deploy_type))
+        self.assertTrue(isfile('deploy/example/index.html'))
+        self.assertTrue(isfile('deploy/example/js/test.js'))
+        self.assertTrue(isfile('deploy/example/django.png'))
 
         self.assertEquals(utilities.read_file('deploy/%s/index.html' % deploy_type),
                           open('deploy/%s/index.html' % deploy_type).read())
@@ -228,6 +237,9 @@ class TestUtilities(TestCase):
         self.assertTrue(isfile('deploy/%s/index.html' % deploy_type))
         self.assertTrue(isfile('deploy/%s/js/test.js' % deploy_type))
         self.assertFalse(isfile('deploy/%s/django.png' % deploy_type))
+        self.assertTrue(isfile('deploy/example/index.html'))
+        self.assertTrue(isfile('deploy/example/js/test.js'))
+        self.assertFalse(isfile('deploy/example/django.png'))
 
     def test_minify(self):
         reset_all()
@@ -314,6 +326,8 @@ function log(message) {
 
         deploy_type = 'test_deploy'
 
+        settings.STATICSITE_DEPLOY_ROOT = 'deploy/%(deploy_type)s'
+
         def before(*args, **kwargs):
             sequence.append('before')
 
@@ -333,3 +347,12 @@ function log(message) {
         settings.STATICSITE_AFTER_DEPLOY = after
         deploy(deploy_type)
         self.assertEquals(sequence, ['before', 'after'])
+
+    def test_storage_dump_load(self):
+        storage = FileSystemStorage(location='foo/bar')
+
+        dump = utilities.dump_storage(storage)
+        loaded_storage = utilities.load_storage(dump)
+
+        self.assertEquals(type(storage), type(loaded_storage))
+        self.assertEquals(storage.location, loaded_storage.location)
