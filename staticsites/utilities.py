@@ -1,8 +1,9 @@
-import pickle
-from StringIO import StringIO
-
 __author__ = 'Christian Bianciotto'
 
+
+import pickle
+from StringIO import StringIO
+from conf_dict import BaseDict
 
 import codecs
 import gzip
@@ -10,53 +11,131 @@ from os.path import isfile
 from os import listdir
 from datetime import datetime
 
-from staticsites.minify import xml
-from inspect import isfunction
 from staticsites import conf
 from os.path import splitext, join
 from django.conf import settings
 from boto.cloudfront import CloudFrontConnection
 
 
-def get(dictionary, key, default=None):
+# Dump / load storage
+
+def dump_storage(storage):
     """
-    Get key value from dict, if key not exist return value for empty string key
-    :param dictionary: the dictionary
-    :param key: the key
-    :param default:
-    :return: key value from dict, if key not exist return value for empty string key
+    Return a string by given storage
+    :param storage: The storage
+    :return: String dump of given storage
     """
-    if key in dictionary:
-        return dictionary[key]
-    elif '' in dictionary:
-        return dictionary['']
-    elif default:
-        return default
-    else:
-        raise KeyError()
+    file = StringIO()
+    pickle.dump(storage, file)
+
+    return file.getvalue()
+
+def load_storage(string):
+    """
+    Return storage by dump string
+    :param string: The dump string
+    :return: Return storage
+    """
+    file = StringIO(string)
+
+    return pickle.load(file)
 
 
-def get_conf(key, deploy_type='', input=None):
+# Check extensions
+
+def has_extension(path, extensions):
     """
-    Get configuration from string key
-    :param key: the config key
-    :param deploy_type: the deploy type
-    :return: in order, input[deploy_type] or input[''] or settings.key or conf.key or input
+    Check if path has extension included in extensions
+    :param path: The path
+    :param extensions: The estensions array
+    :return: True if path extension is included in extensions array
     """
-    if input and isinstance(input, dict):
-        return get(input, deploy_type)
+    if not path:
+        raise ValueError('path must be not None or empty')
+    if extensions is None:
+        raise ValueError('extensions must be not None')
+
+    file_name, file_extension = splitext(path)
+
+    if file_extension.lower() in extensions:
+        return True
+
+    return False
+
+def is_xml(app, deploy_type, path):
+    """
+    Check if path has extension included in STATICSITE_XML_EXTENSIONS
+    :param app: The current deploying app
+    :param deploy_type: The deploy type
+    :param path: The path
+    :return: True if path extension is included in STATICSITE_XML_EXTENSIONS
+    """
+    return has_extension(path, get_conf('STATICSITE_XML_EXTENSIONS', app=app, deploy_type=deploy_type, path=path))
+
+
+def is_html(app, deploy_type, path):
+    """
+    Check if path has extension included in STATICSITE_HTML_EXTENSIONS
+    :param app: The current deploying app
+    :param deploy_type: The deploy type
+    :param path: The path
+    :return: True if path extension is included in STATICSITE_HTML_EXTENSIONS
+    """
+    return has_extension(path, get_conf('STATICSITE_HTML_EXTENSIONS', app=app, deploy_type=deploy_type, path=path))
+
+
+def is_css(app, deploy_type, path):
+    """
+    Check if path has extension included in STATICSITE_CSS_EXTENSIONS
+    :param app: The current deploying app
+    :param deploy_type: The deploy type
+    :param path: The path
+    :return: True if path extension is included in STATICSITE_CSS_EXTENSIONS
+    """
+    return has_extension(path, get_conf('STATICSITE_CSS_EXTENSIONS', app=app, deploy_type=deploy_type, path=path))
+
+
+def is_js(app, deploy_type, path):
+    """
+    Check if path has extension included in STATICSITE_JS_EXTENSIONS
+    :param app: The current deploying app
+    :param deploy_type: The deploy type
+    :param path: The path
+    :return: True if path extension is included in STATICSITE_JS_EXTENSIONS
+    """
+    return has_extension(path, get_conf('STATICSITE_JS_EXTENSIONS', app=app, deploy_type=deploy_type, path=path))
+
+
+# Get configurations
+
+def get_conf(key, app='', deploy_type='', path='', input=None):
+    """
+    Get correct configuration value, by string key, from input, settings or default conf
+    :param key: The config key
+    :param app: The current deploying app
+    :param deploy_type: The deploy type
+    :param path: The current destination path
+    :param input: The input constant or conf_dict
+    :return: The correct value of constant key
+    """
+    file_extension = ''
+    if path:
+        file_name, file_extension = splitext(path)
+    
+    if input and isinstance(input, BaseDict):
+        return input.get(app=app, deploy_type=deploy_type, extension=file_extension)
     # Use == for exclude empty array and False
     elif input is None:
         if hasattr(settings, key):
             value = getattr(settings, key)
-            if isinstance(value, dict):
-                return get(value, deploy_type)
+            if isinstance(value, BaseDict):
+                return value.get(app=app, deploy_type=deploy_type, extension=file_extension)
             return value
 
         value = getattr(conf, key)
-        if isinstance(value, dict):
+        if isinstance(value, BaseDict):
             try:
-                return get(value, deploy_type)
+                return value.get(app=app, deploy_type=deploy_type, extension=file_extension)
             except KeyError:
                 pass
         return value
@@ -72,152 +151,74 @@ def get_default_deploy_type():
     return get_conf('STATICSITE_DEFAULT_DEPLOY_TYPE')
 
 
-def get_minify_function(minify, path):
+def get_path(func_name, app, deploy_type, path):
     """
-    Return minify function from path or None
-    :param path: The path
-    :return: The minify function from path or None
-    """
-    if minify and isfunction(minify):
-        return minify
-
-    if not path:
-        return xml
-
-    file_name, file_extension = splitext(path)
-
-    staticsite_minify_func = get_conf('STATICSITE_MINIFY_FUNC')
-
-    if file_extension in staticsite_minify_func:
-        return get_conf('STATICSITE_MINIFY_FUNC')[file_extension]
-    return None
-
-
-def has_extension(path, extensions):
-    """
-    Check if path has extension included in extensions
-    :param path: The path
-    :param extensions: The estensions array
-    :return: True if path extension is included in extensions array
-    """
-    if not path:
-        raise ValueError('path must be not None or empty')
-    # Use == for exclude empty array
-    if extensions is None:
-        raise ValueError('extensions must be not None')
-
-    file_name, file_extension = splitext(path)
-
-    if file_extension.lower() in extensions:
-        return True
-
-    return False
-
-
-def is_xml(path):
-    """
-    Check if path has extension included in STATICSITE_XML_EXTENSIONS
-    :param path: The path
-    :return: True if path extension is included in STATICSITE_XML_EXTENSIONS
-    """
-    return has_extension(path, get_conf('STATICSITE_XML_EXTENSIONS'))
-
-
-def is_html(path):
-    """
-    Check if path has extension included in STATICSITE_HTML_EXTENSIONS
-    :param path: The path
-    :return: True if path extension is included in STATICSITE_HTML_EXTENSIONS
-    """
-    return has_extension(path, get_conf('STATICSITE_HTML_EXTENSIONS'))
-
-
-def is_css(path):
-    """
-    Check if path has extension included in STATICSITE_CSS_EXTENSIONS
-    :param path: The path
-    :return: True if path extension is included in STATICSITE_CSS_EXTENSIONS
-    """
-    return has_extension(path, get_conf('STATICSITE_CSS_EXTENSIONS'))
-
-
-def is_js(path):
-    """
-    Check if path has extension included in STATICSITE_JS_EXTENSIONS
-    :param path: The path
-    :return: True if path extension is included in STATICSITE_JS_EXTENSIONS
-    """
-    return has_extension(path, get_conf('STATICSITE_JS_EXTENSIONS'))
-
-
-def get_path(path, func_name, deploy_type=get_default_deploy_type()):
-    """
-    Return the correct file path from input data and configuration
-    :param path: The input path or dict
+    Return the correct path from configuration or input value
     :param func_name: The view function name
+    :param app: The current deploying app
     :param deploy_type: The deploy type
-    :return: in order, path[deploy_type] or path[''] or func_name as path or path
+    :param path: The current destination path
+    :param input: The input constant or conf_dict
+    :return: The correct path
     """
     if path:
-        if isinstance(path, dict):
-            return get(path, deploy_type)
+        if isinstance(path, BaseDict):
+            return path.get(app=app, deploy_type=deploy_type)
     else:
         path = func_name.replace('__', '/') + '.html'
 
     return path
 
 
-def get_minify(minify, path, deploy_type=get_default_deploy_type()):
+def get_minify(minify, app, deploy_type, path):
     """
-    Return the correct minify function for file extension or None
-    :param minify: The input value or dict or minify function
-    :param path: The path
+    Return the correct minify function from configuration or input value
+    :param minify: The minify input value or conf_dict
+    :param key: The config key
+    :param app: The current deploying app
     :param deploy_type: The deploy type
-    :return: get_conf('STATICSITE_MINIFY', deploy_type, minify)[extension]
+    :param path: The current destination path
+    :return: The minify function or None
     """
-    minify = get_conf('STATICSITE_MINIFY', deploy_type, minify)
-
-    if minify and isinstance(minify, dict):
-        file_name, file_extension = splitext(path)
-
-        try:
-            return get(minify, file_extension, None)
-        except KeyError:
-            return None
-
-    return minify
+    return get_conf('STATICSITE_MINIFY', app=app, deploy_type=deploy_type, path=path, input=minify)
 
 
-def get_gzip(gzip, deploy_type=get_default_deploy_type()):
+def get_gzip(gzip, app, deploy_type, path):
     """
-    Return the correct gzip value from input data and configuration
-    :param gzip: The input gzip value or dict
+    Return the correct gzip value from configuration or input value
+    :param gzip: The input gzip value or conf_dict
+    :param app: The current deploying app
     :param deploy_type: The deploy type
-    :return: get_conf('STATICSITE_GZIP', deploy_type, gzip)
+    :param path: The current destination path
+    :return: True if need gzip
     """
-    return get_conf('STATICSITE_GZIP', deploy_type, gzip)
+    return get_conf('STATICSITE_GZIP', app=app, deploy_type=deploy_type, path=path, input=gzip)
 
 
-def get_file_storage(file_storage, deploy_type=get_default_deploy_type()):
+def get_file_storage(file_storage, app, deploy_type, path):
     """
-    Return the correct file_storage type from input data and configuration
-    :param file_storage: The input file_storage type or dict
+    Return the correct file_storage type / file_storage tuple from configuration or input value
+    :param file_storage: The input file_storage type or conf_dict
+    :param app: The current deploying app
     :param deploy_type: The deploy type
-    :return: get_conf('STATICSITE_DEFAULT_FILE_STORAGE', deploy_type, file_storage)
+    :param path: The current destination path
+    :return: The file_storage type / file_storage tuple
     """
-    return get_conf('STATICSITE_DEFAULT_FILE_STORAGE', deploy_type, file_storage)
+    return get_conf('STATICSITE_DEFAULT_FILE_STORAGE', app=app, deploy_type=deploy_type, path=path, input=file_storage)
 
 
-def get_storages(file_storage, deploy_type=get_default_deploy_type(), *args, **kwargs):
+def get_storages(file_storage, app, deploy_type, path, **kwargs):
     """
-    Return the correct storage instance for the input data and configuration
-    :param file_storage:  The input file_storage type or dict
+    Return the correct storage instance from configuration or input value
+    :param file_storage: The input file_storage type or conf_dict
+    :param app: The current deploying app
     :param deploy_type: The deploy type
+    :param path: The current destination path
     :param args: args passed to the input file_storage
     :param kwargs: kwargs passed to the input file_storage
-    :return: correct storage instance
+    :return: The correct storage instance
     """
-    file_storage = get_file_storage(file_storage, deploy_type)
+    file_storage = get_file_storage(file_storage, app, deploy_type, path)
 
     if isinstance(file_storage, list):
         file_storages = file_storage
@@ -235,18 +236,26 @@ def get_storages(file_storage, deploy_type=get_default_deploy_type(), *args, **k
             else:
                 raise AttributeError('FileStorage tuple must contain FileStorage and **kwargs')
 
-        storages.append(file_storage(*args, **kwargs))
+        if 'location' in kwargs:
+            kwargs['location'] = get_deploy_root(kwargs['location'], app, deploy_type, path)
+        else:
+            kwargs['location'] = get_deploy_root(None, app, deploy_type, path)
+
+        storages.append(file_storage(**kwargs))
 
     return storages
 
-def get_deploy_root(deploy_type=get_default_deploy_type()):
+def get_deploy_root(deploy_root, app, deploy_type, path):
     """
-    Return the correct deploy_path from input data and configuration
+    Return the correct deploy_root from configuration or input value
+    :param deploy_root: The deploy root
+    :param app: The current deploying app
     :param deploy_type: The deploy type
-    :return: get_conf('STATICSITE_DEPLOY_ROOT', deploy_type)
+    :param path: The current destination path
+    :return: The correct deploy_root
     """
-    deploy_root = get_conf('STATICSITE_DEPLOY_ROOT', deploy_type)
-    deploy_root_date_format = get_deploy_root_date_format(deploy_type)
+    deploy_root = get_conf('STATICSITE_DEPLOY_ROOT', app=app, deploy_type=deploy_type, path=path, input=deploy_root)
+    deploy_root_date_format = get_deploy_root_date_format(None, app, deploy_type, path)
     deploy_root = deploy_root % {
         'deploy_type': deploy_type,
         'asctime': datetime.now().strftime(deploy_root_date_format)
@@ -255,23 +264,29 @@ def get_deploy_root(deploy_type=get_default_deploy_type()):
     return deploy_root
 
 
-def get_deploy_root_date_format(deploy_type=get_default_deploy_type()):
+def get_deploy_root_date_format(deploy_root_date_format, app, deploy_type, path):
     """
-    Return the correct deploy_path_date_formatp from input data and configuration
+    Return the correct deploy_path_date_format from configuration or input value
     :param deploy_type: The deploy type
-    :return: get_conf('STATICSITE_DEPLOY_ROOT_DATE_FORMAT', deploy_type)
-    """
-    return get_conf('STATICSITE_DEPLOY_ROOT_DATE_FORMAT', deploy_type)
-
-
-def get_default_index(deploy_type=get_default_deploy_type()):
-    """
-    Return the correct default_index from input data and configuration
+    :param app: The current deploying app
     :param deploy_type: The deploy type
-    :return: get_conf('STATICSITE_DEFAULT_INDEX', deploy_type)
+    :param path: The current destination path
+    :return: The correct deploy_path_date_format
     """
-    return get_conf('STATICSITE_DEFAULT_INDEX', deploy_type)
+    return get_conf('STATICSITE_DEPLOY_ROOT_DATE_FORMAT', app=app, deploy_type=deploy_type, path=path, input=deploy_root_date_format)
 
+
+def get_default_index(app, deploy_type):
+    """
+    Return the correct default_index from configuration or input value
+    :param app: The current deploying app
+    :param deploy_type: The deploy type
+    :return: The correct default_index
+    """
+    return get_conf('STATICSITE_DEFAULT_INDEX', app=app, deploy_type=deploy_type)
+
+
+# Navigate into path tree
 
 def iterate_dir(path, callback, ignore=None, *args, **kwargs):
     """
@@ -308,6 +323,8 @@ def iterate_dir(path, callback, ignore=None, *args, **kwargs):
 
     _iterate_dir(path, "", callback, ignore, *args, **kwargs)
 
+
+# Read file helper
 
 def read_binary(path):
     """
@@ -357,6 +374,8 @@ def read_gzip_file(path):
             file.close()
 
 
+# AWS Helper
+
 def invalidate_paths(deploy_type, paths, *args, **kwargs):
     """
     Helper function, create an invalidation request for CloudFront distribution
@@ -375,25 +394,3 @@ def invalidate_paths(deploy_type, paths, *args, **kwargs):
         conn_cf = CloudFrontConnection(get_conf('AWS_ACCESS_KEY_ID', deploy_type),
                                        get_conf('AWS_SECRET_ACCESS_KEY', deploy_type))
         conn_cf.create_invalidation_request(distribution, paths)
-
-def dump_storage(storage):
-    """
-    Return a string by given storage
-    :param storage: The storage
-    :return: String dump of given storage
-    """
-    file = StringIO()
-    pickle.dump(storage, file)
-
-    return file.getvalue()
-
-def load_storage(string):
-    """
-    Return storage by dump string
-    :param string: The dump string
-    :return: Return storage
-    """
-    file = StringIO(string)
-
-    return pickle.load(file)
-

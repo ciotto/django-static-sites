@@ -11,7 +11,6 @@ https://docs.djangoproject.com/en/1.7/ref/settings/
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 import os
 from os.path import join
-from django.core.files.storage import FileSystemStorage
 
 BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 
@@ -48,9 +47,6 @@ INSTALLED_APPS = (
 
     # Examples
     'staticsites.tests.examples.example1',
-
-    # Library for examples
-    # 'storages',
 )
 
 MIDDLEWARE_CLASSES = (
@@ -98,37 +94,37 @@ USE_TZ = True
 STATIC_ROOT = os.path.join(BASE_DIR, 'deploy/dev')
 STATIC_URL = '/static/'
 
-
-# from storages.backends.s3boto import S3BotoStorage
-# from storages.backends import s3
-
-STATICSITE_STATICFILES_DIRS = (
+STATICSITE_STATICFILES_DIRS = [
     ('staticsites/tests/examples/example1/static', ),
-)
+]
 
 
 # S3BotoStorage configuration
-AWS_ACCESS_KEY_ID = 'YOUR_AWS_ACCESS_KEY_ID'
-AWS_SECRET_ACCESS_KEY = 'YOUR_AWS_SECRET_ACCESS_KEY'
-AWS_DISTRIBUTION_ID = 'YOUR_CLOUDFRONT_DISTRIBUTION_ID'
+# AWS_ACCESS_KEY_ID = 'YOUR_AWS_ACCESS_KEY_ID'
+# AWS_SECRET_ACCESS_KEY = 'YOUR_AWS_SECRET_ACCESS_KEY'
+# AWS_DISTRIBUTION_ID = 'YOUR_CLOUDFRONT_DISTRIBUTION_ID'
 
-AWS_STORAGE_BUCKET_NAME = 'YOUR_S3_BUCKET_NAME'
+AWS_STORAGE_BUCKET_NAME = 'django-static-sites-test'
+
+AWS_ACCESS_KEY_ID = 'AKIAITL2P4MGXGC6NTBA'
+AWS_SECRET_ACCESS_KEY = 'oglzLxJzJZh3aJJg32DdHJx0jV1NXTcbRZ/c8D6h'
+AWS_DISTRIBUTION_ID = 'E2TR31FA25BSTQ'
 
 
 # Example configuration
-STATICSITE_DEPLOY_ROOT = {'': 'deploy/%(deploy_type)s', 'test': '/'}
+from staticsites.conf_dict import DeployTypes
+STATICSITE_DEPLOY_ROOT = DeployTypes({'': 'deploy/%(deploy_type)s', 'test': '/'})
 
 from django.core.files.storage import FileSystemStorage
 from storages.backends.s3boto import S3BotoStorage
-STATICSITE_DEFAULT_FILE_STORAGE = {
+STATICSITE_DEFAULT_FILE_STORAGE = DeployTypes({
     '': [
         FileSystemStorage,
-        (FileSystemStorage, {'location': 'deploy/example'}),
     ],
     'test': [
         S3BotoStorage,
     ]
-}
+})
 
 from staticsites.utilities import invalidate_paths
-STATICSITE_AFTER_DEPLOY = {'': None, 'test': invalidate_paths}
+STATICSITE_AFTER_DEPLOY = DeployTypes({'': None, 'test': invalidate_paths})

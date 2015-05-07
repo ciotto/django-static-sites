@@ -67,9 +67,9 @@ var text = '{{ title }}';
 alert(text);
 ```
 
-The `test.js` destination path are specified in `@staticview` decoration and is different for different deploy type so
-we must add `'js_path': get(js__test.path, deploy_type)` in the `index.html` context. `deploy_type` are passed to the view
-functions if declared. Now we can add the import line in the `index.html` file:
+The `test.js` destination path are specified in `@staticview` decorator and is different for different deploy type so
+we must add `'js_path': js__test.path.get(deploy_type=deploy_type)` in the `index.html` context. `deploy_type` are passed to the view
+functions if is declared. Now we can add the import line in the `index.html` file:
 
 ```html
 <script type="text/javascript" src="{{ js_path }}"></script>
@@ -108,10 +108,13 @@ if settings.DEBUG:
 * ~~autodeploy~~
 * ~~static file optimization~~
 * revert deploy if fail
-* GZip deployed files
-* minify deployed files
-* custom header for deployed files
+* ~~GZip deployed files~~
+* ~~minify deployed files~~
+* ~~custom header for deployed files~~
 * ~~singe configuration constant as dictionary~~
-* deploy on multiple remote
+* ~~deploy on multiple remote~~
+* add param check and raise Exception
+* update tests
+* dedicated *settings* module for sample
 * add tutorials
 * ~~deploy admin console~~

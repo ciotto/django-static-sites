@@ -31,65 +31,73 @@ class DefaultDeployUtilities:
         self.paths = []
         self.deploy_operations = []
 
-    def copy(self, path, sub_path):
+    def copy(self, path, sub_path, staticfiles_dir=None, *args, **kwargs):
         full_path = join(path, sub_path)
 
-        minify = utilities.get_minify(None, sub_path, self.deploy_type)
+        file_storage = None
+        if staticfiles_dir and len(staticfiles_dir) > 1:
+            file_storage = staticfiles_dir[1]
 
-        gzip = utilities.get_gzip(None, self.deploy_type)
+        minify = utilities.get_minify(None, None, self.deploy_type, sub_path)
 
-        file = None
-        try:
-            operation_type = 'N'
+        gzip = utilities.get_gzip(None, None, self.deploy_type, sub_path)
 
-            if self.storage.exists(sub_path):
-                # Check if need update by checking modification date
-                if datetime.fromtimestamp(getmtime(full_path)) > self.storage.modified_time(sub_path):
-                    self.storage.delete(sub_path)
-                    operation_type = 'U'
-                else:
-                    operation_type = 'NU'
-                    logging.info('File %s not updated' % path)
+        storages = utilities.get_storages(file_storage, None, self.deploy_type, sub_path, **kwargs)
 
-            if operation_type is not 'NU':
-                if minify or gzip:
-                    if minify:
-                        content = utilities.read_file(full_path)
-                        content = minify(content)
+        for self.storage in storages:
+            file = None
+            try:
+                operation_type = 'N'
+
+                if self.storage.exists(sub_path):
+                    # Check if need update by checking modification date
+                    if datetime.fromtimestamp(getmtime(full_path)) > self.storage.modified_time(sub_path):
+                        self.storage.delete(sub_path)
+                        operation_type = 'U'
                     else:
-                        content = utilities.read_binary(full_path)
+                        operation_type = 'NU'
+                        logging.info('File %s not updated' % path)
 
-                    if gzip:
-                        #TODO gzip config discriminate extension
-                        #TODO append .gz extension (config)
-                        file = StringIO()
-                        gzip_file = GzipFile(fileobj=file, mode="w")
-                        gzip_file.write(content)
-                        gzip_file.close()
+                if operation_type is not 'NU':
+                    if minify or gzip:
+                        if minify:
+                            content = utilities.read_file(full_path)
+                            content = minify(content)
+                        else:
+                            content = utilities.read_binary(full_path)
+
+                        if gzip:
+                            #TODO gzip config discriminate extension
+                            #TODO append .gz extension (config)
+                            file = StringIO()
+                            gzip_file = GzipFile(fileobj=file, mode="w")
+                            gzip_file.write(content)
+                            gzip_file.close()
+                        else:
+                            file = io.StringIO(content)
                     else:
-                        file = io.StringIO(content)
-                else:
-                    file = open(full_path, 'r')
-                self.storage.save(sub_path, file)
+                        file = open(full_path, 'r')
 
-                if operation_type is 'U':
-                    logging.info('Update file %s' % sub_path)
-                else:
-                    logging.info('Create dynamic file %s' % sub_path)
+                    self.storage.save(sub_path, file)
 
-            dpo = DeployOperation(deploy=self.deploy,
-                                  file_type='S',
-                                  operation_type=operation_type,
-                                  path=sub_path,
-                                  storage=utilities.dump_storage(self.storage))
-            dpo.save()
+                    if operation_type is 'U':
+                        logging.info('Update file %s' % sub_path)
+                    else:
+                        logging.info('Create static file %s' % sub_path)
 
-            if sub_path not in self.paths:
-                self.paths.append(sub_path)
-            self.deploy_operations.append(dpo)
-        finally:
-            if file:
-                file.close()
+                dpo = DeployOperation(deploy=self.deploy,
+                                      file_type='S',
+                                      operation_type=operation_type,
+                                      path=sub_path,
+                                      storage=utilities.dump_storage(self.storage))
+                dpo.save()
+
+                if sub_path not in self.paths:
+                    self.paths.append(sub_path)
+                self.deploy_operations.append(dpo)
+            finally:
+                if file:
+                    file.close()
 
     def start(self):
         logging.basicConfig(
@@ -111,36 +119,16 @@ class DefaultDeployUtilities:
         if before_deploy:
             before_deploy(deploy_type=self.deploy_type, deploy=self.deploy)
 
-        utilities.set_settings(self.deploy_type)
-
-        # Create deploy root
-        deploy_root = utilities.get_deploy_root(self.deploy_type)
-        if not exists(deploy_root):
-            makedirs(deploy_root)
-
         # Copy static files
         staticfiles_dirs = utilities.get_conf('STATICSITE_STATICFILES_DIRS', self.deploy_type)
         if staticfiles_dirs:
-            if isinstance(staticfiles_dirs, basestring):
-                raise AssertionError("type %s is not iterable" % type(staticfiles_dirs))
-
             for staticfiles_dir in staticfiles_dirs:
-                if isinstance(staticfiles_dir, basestring):
-                    raise AssertionError("type %s is not iterable" % type(staticfiles_dir))
-
                 path = abspath(staticfiles_dir[0])
-                if len(staticfiles_dir) > 1:
-                    file_storage = staticfiles_dir[1]
-                    storages = utilities.get_storages(file_storage=file_storage,
-                                                    deploy_type=self.deploy_type,
-                                                    location=deploy_root)
-                else:
-                    storages = utilities.get_storages(file_storage=None,
-                                                    deploy_type=self.deploy_type,
-                                                    location=deploy_root)
 
-                for self.storage in storages:
-                    utilities.iterate_dir(path, self.copy)
+                #TODO implement
+                ignore = None
+
+                utilities.iterate_dir(path, self.copy, ignore, staticfiles_dir)
 
         # Create dynamic files
         for appname in settings.INSTALLED_APPS:
@@ -155,22 +143,21 @@ class DefaultDeployUtilities:
                             gzip = function.gzip
                             file_storage = function.file_storage
 
-                            path = utilities.get_path(path, func_name, self.deploy_type)
-                            minify = utilities.get_minify(minify, path, self.deploy_type)
-                            gzip = utilities.get_gzip(gzip, self.deploy_type)
+                            path = utilities.get_path(func_name, appname, self.deploy_type, path)
+                            minify = utilities.get_minify(minify, appname, self.deploy_type, path)
+                            gzip = utilities.get_gzip(gzip, appname, self.deploy_type, path)
 
                             if 'deploy_type' in function.func_code.co_varnames:
                                 response = function(HttpRequest(), self.deploy_type)
                             else:
                                 response = function(HttpRequest())
 
-                            storages = utilities.get_storages(file_storage=file_storage,
-                                                            deploy_type=self.deploy_type,
-                                                            location=deploy_root)
-
-                            content = response.content
+                            #TODO encoding
+                            content = unicode(response.content)
                             if minify:
-                                content = minify(u'' + content)
+                                content = minify(content)
+
+                            storages = utilities.get_storages(file_storage, None, self.deploy_type, None)
 
                             for self.storage in storages:
 
@@ -207,7 +194,7 @@ class DefaultDeployUtilities:
                                             gzip_file.write(content)
                                             gzip_file.close()
                                         else:
-                                            file = io.BytesIO(content)
+                                            file = io.StringIO(content)
 
                                         self.storage.save(path, file)
 
@@ -251,5 +238,5 @@ class DefaultDeployUtilities:
 DeployUtilities = DefaultDeployUtilities
 
 
-def deploy(deploy_type=utilities.get_conf('STATICSITE_DEFAULT_DEPLOY_TYPE')):
+def deploy(deploy_type=utilities.get_default_deploy_type()):
     DeployUtilities(deploy_type=deploy_type).start()

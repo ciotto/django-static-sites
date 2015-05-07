@@ -2,12 +2,13 @@
 __author__ = 'Christian Bianciotto'
 
 
+import shutil
 import gzip
 from django.core.files.storage import FileSystemStorage
-from conf_dict import BaseDict, DeployTypes, Apps, Extensions
+from staticsites.conf_dict import BaseDict, DeployTypes, Apps, Extensions
 import minify
 
-from os.path import join, isfile
+from os.path import join, isfile, isdir
 from staticsites import conf
 from django.conf import settings
 from django.test import TestCase
@@ -24,6 +25,9 @@ def reset_all():
     reset('STATICSITE_DEPLOY_ROOT')
 
     reset('STATICSITE_DEPLOY_ROOT_DATE_FORMAT')
+
+    reset('STATICSITE_BEFORE_DEPLOY')
+    reset('STATICSITE_AFTER_DEPLOY')
 
     reset('STATICSITE_DEFAULT_DEPLOY_TYPE')
     reset('STATICSITE_DEFAULT_INDEX')
@@ -48,6 +52,43 @@ class TestUtilities(TestCase):
 
         d[''] = 'bar'
         self.assertEqual(d['bar'], d[''])
+
+        d = Extensions({
+            'foo': 1,
+            'bar': 2,
+            'qwe': 3,
+            '': 4,
+        })
+
+        self.assertEqual(d.get(), d[''])
+        self.assertEqual(d.get(app='foo'), d[''])
+        self.assertEqual(d.get(app='foo', deploy_type='bar'), d[''])
+        self.assertEqual(d.get(app='foo', deploy_type='bar', extension='foo'), d['foo'])
+        self.assertEqual(d.get(app='foo', extension='foo'), d['foo'])
+        self.assertEqual(d.get(app='foo', deploy_type='foo'), d[''])
+
+        d = DeployTypes({
+            'bar': Extensions({
+                'foo': 1,
+                'bar': 2,
+                'qwe': 3,
+                '': 4,
+            }),
+            'qwe': 5,
+            '': Extensions({
+                'foo': 6,
+                'bar': 7,
+                'qwe': 8,
+                '': 9,
+            }),
+        })
+
+        self.assertEqual(d.get(), d[''][''])
+        self.assertEqual(d.get(app='foo'), d[''][''])
+        self.assertEqual(d.get(app='foo', deploy_type='bar'), d['bar'][''])
+        self.assertEqual(d.get(app='foo', deploy_type='bar', extension='foo'), d['bar']['foo'])
+        self.assertEqual(d.get(app='foo', extension='foo'), d['']['foo'])
+        self.assertEqual(d.get(app='foo', deploy_type='foo'), d[''][''])
 
         d = Apps({
             'foo': DeployTypes({
@@ -82,36 +123,23 @@ class TestUtilities(TestCase):
         self.assertEqual(d.get(app='foo', extension='foo'), d['foo']['']['foo'])
         self.assertEqual(d.get(app='foo', deploy_type='foo'), d['foo'][''][''])
 
-
-
-    def test_get(self):
-        reset_all()
-
-        dict1 = {'test': 'lol', '': 'qwe'}
-        self.assertEqual(utilities.get(dict1, 'test'), dict1['test'])
-        self.assertEqual(utilities.get(dict1, ''), dict1[''])
-        self.assertEqual(utilities.get(dict1, 'bar'), dict1[''])
-
-        self.assertRaises(KeyError, utilities.get, {'test': 'lol'}, 'bar')
-        self.assertRaises(KeyError, utilities.get, {'test': 'lol'}, None)
-
     def test_get_conf(self):
         reset_all()
 
         self.assertEqual(utilities.get_conf('STATICSITE_DEFAULT_DEPLOY_TYPE'), conf.STATICSITE_DEFAULT_DEPLOY_TYPE)
-        self.assertEqual(utilities.get_conf('STATICSITE_DEPLOY_ROOT', 'dev'), conf.STATICSITE_DEPLOY_ROOT['dev'])
-        self.assertEqual(utilities.get_conf('STATICSITE_DEPLOY_ROOT', 'test'), conf.STATICSITE_DEPLOY_ROOT[''])
+        self.assertEqual(utilities.get_conf('STATICSITE_DEPLOY_ROOT', deploy_type='dev'), conf.STATICSITE_DEPLOY_ROOT['dev'])
+        self.assertEqual(utilities.get_conf('STATICSITE_DEPLOY_ROOT', deploy_type='test'), conf.STATICSITE_DEPLOY_ROOT[''])
 
         settings.STATICSITE_DEPLOY_ROOT = 'foo'
         self.assertEqual(utilities.get_conf('STATICSITE_DEPLOY_ROOT'), settings.STATICSITE_DEPLOY_ROOT)
-        settings.STATICSITE_DEPLOY_ROOT = {'dev': 'foo', '': 'bar'}
-        self.assertEqual(utilities.get_conf('STATICSITE_DEPLOY_ROOT', 'dev'), settings.STATICSITE_DEPLOY_ROOT['dev'])
-        self.assertEqual(utilities.get_conf('STATICSITE_DEPLOY_ROOT', 'test'), settings.STATICSITE_DEPLOY_ROOT[''])
+        settings.STATICSITE_DEPLOY_ROOT = DeployTypes({'dev': 'foo', '': 'bar'})
+        self.assertEqual(utilities.get_conf('STATICSITE_DEPLOY_ROOT', deploy_type='dev'), settings.STATICSITE_DEPLOY_ROOT['dev'])
+        self.assertEqual(utilities.get_conf('STATICSITE_DEPLOY_ROOT', deploy_type='test'), settings.STATICSITE_DEPLOY_ROOT[''])
 
-        dict1 = {'test': 'lol', '': 'qwe'}
-        self.assertEqual(utilities.get_conf('STATICSITE_DEPLOY_ROOT', 'test', dict1),
+        dict1 = DeployTypes({'test': 'lol', '': 'qwe'})
+        self.assertEqual(utilities.get_conf('STATICSITE_DEPLOY_ROOT', deploy_type='test', input=dict1),
                          dict1['test'])
-        self.assertEqual(utilities.get_conf('STATICSITE_DEPLOY_ROOT', 'demo', dict1),
+        self.assertEqual(utilities.get_conf('STATICSITE_DEPLOY_ROOT', deploy_type='demo', input=dict1),
                          dict1[''])
 
         self.assertEqual(utilities.get_conf('STATICSITE_DEPLOY_ROOT_DATE_FORMAT'), conf.STATICSITE_DEPLOY_ROOT_DATE_FORMAT)
@@ -135,39 +163,40 @@ class TestUtilities(TestCase):
         reset_all()
 
         # No path, use func_name (skip deploy_type)
-        self.assertEqual(utilities.get_path(None, 'bar', 'test'), 'bar.html')
-        self.assertEqual(utilities.get_path(None, 'bar', None), 'bar.html')
-        self.assertEqual(utilities.get_path(None, 'foo_bar', None), 'foo_bar.html')
-        self.assertEqual(utilities.get_path(None, 'foo__bar', None), join('foo', 'bar.html'))
-        self.assertEqual(utilities.get_path(None, 'foo__bar_asd', None), join('foo', 'bar_asd.html'))
-        self.assertEqual(utilities.get_path(None, 'foo__bar__asd', None), join('foo', 'bar', 'asd.html'))
+        self.assertEqual(utilities.get_path('bar', None, 'test', None), 'bar.html')
+        self.assertEqual(utilities.get_path('bar', None, None, None), 'bar.html')
+        self.assertEqual(utilities.get_path('foo_bar', None, None, None), 'foo_bar.html')
+        self.assertEqual(utilities.get_path('foo__bar',None, None,  None), join('foo', 'bar.html'))
+        self.assertEqual(utilities.get_path('foo__bar_asd', None, None, None), join('foo', 'bar_asd.html'))
+        self.assertEqual(utilities.get_path('foo__bar__asd', None, None, None), join('foo', 'bar', 'asd.html'))
 
         # Path is string, return path as is (skip func_name and deploy_type)
-        self.assertEqual(utilities.get_path('bar.html', 'bar', None), 'bar.html')
-        self.assertEqual(utilities.get_path('bar.html', 'foo_bar', None), 'bar.html')
-        self.assertEqual(utilities.get_path('bar.html', 'foo__bar', None), 'bar.html')
-        self.assertEqual(utilities.get_path('bar.html', 'foo__bar_asd', None), 'bar.html')
-        self.assertEqual(utilities.get_path('bar.html', 'foo__bar__asd', None), 'bar.html')
-        self.assertEqual(utilities.get_path(join('foo', 'bar.html'), 'bar', None), join('foo', 'bar.html'))
-        self.assertEqual(utilities.get_path(join('foo', 'bar.html'), 'foo_bar', None), join('foo', 'bar.html'))
-        self.assertEqual(utilities.get_path(join('foo', 'bar.html'), 'foo__bar', None), join('foo', 'bar.html'))
-        self.assertEqual(utilities.get_path(join('foo', 'bar.html'), 'foo__bar_asd', None), join('foo', 'bar.html'))
-        self.assertEqual(utilities.get_path(join('foo', 'bar.html'), 'foo__bar__asd', None), join('foo', 'bar.html'))
+        self.assertEqual(utilities.get_path('bar', None, None, 'bar.html'), 'bar.html')
+        self.assertEqual(utilities.get_path('foo_bar', None, None, 'bar.html'), 'bar.html')
+        self.assertEqual(utilities.get_path('foo__bar', None, None, 'bar.html'), 'bar.html')
+        self.assertEqual(utilities.get_path('foo__bar_asd', None, None, 'bar.html'), 'bar.html')
+        self.assertEqual(utilities.get_path('foo__bar__asd', None, None, 'bar.html'), 'bar.html')
+        self.assertEqual(utilities.get_path('bar', None, None, join('foo', 'bar.html')), join('foo', 'bar.html'))
+        self.assertEqual(utilities.get_path('foo_bar', None, None, join('foo', 'bar.html')), join('foo', 'bar.html'))
+        self.assertEqual(utilities.get_path('foo__bar', None, None, join('foo', 'bar.html')), join('foo', 'bar.html'))
+        self.assertEqual(utilities.get_path('foo__bar_asd', None, None, join('foo', 'bar.html')), join('foo', 'bar.html'))
+        self.assertEqual(utilities.get_path('foo__bar__asd', None, None, join('foo', 'bar.html')), join('foo', 'bar.html'))
 
         # Path is dict, return path[deploy_type] if exist, else return path[''] (skip func_name)
-        self.assertEqual(utilities.get_path({'test': 'bar.html', '': 'foo.html'}, 'bar', 'test'), 'bar.html')
-        self.assertEqual(utilities.get_path({'test': 'bar.html', '': 'foo.html'}, 'foo_bar', 'test'), 'bar.html')
-        self.assertEqual(utilities.get_path({'test': 'bar.html', '': 'foo.html'}, 'foo__bar', 'test'), 'bar.html')
-        self.assertEqual(utilities.get_path({'test': 'bar.html', '': 'foo.html'}, 'foo__bar_asd', 'test'), 'bar.html')
-        self.assertEqual(utilities.get_path({'test': 'bar.html', '': 'foo.html'}, 'foo__bar__asd', 'test'), 'bar.html')
-        self.assertEqual(utilities.get_path({'test': 'bar.html', '': 'foo.html'}, 'bar', 'demo'), 'foo.html')
-        self.assertEqual(utilities.get_path({'test': 'bar.html', '': 'foo.html'}, 'foo_bar', 'demo'), 'foo.html')
-        self.assertEqual(utilities.get_path({'test': 'bar.html', '': 'foo.html'}, 'foo__bar', 'demo'), 'foo.html')
-        self.assertEqual(utilities.get_path({'test': 'bar.html', '': 'foo.html'}, 'foo__bar_asd', 'demo'), 'foo.html')
-        self.assertEqual(utilities.get_path({'test': 'bar.html', '': 'foo.html'}, 'foo__bar__asd', 'demo'), 'foo.html')
+        temp_dict = DeployTypes({'test': 'bar.html', '': 'foo.html'})
+        self.assertEqual(utilities.get_path('bar', None, 'test', temp_dict), 'bar.html')
+        self.assertEqual(utilities.get_path('foo_bar', None, 'test', temp_dict), 'bar.html')
+        self.assertEqual(utilities.get_path('foo__bar', None, 'test', temp_dict), 'bar.html')
+        self.assertEqual(utilities.get_path('foo__bar_asd', None, 'test', temp_dict), 'bar.html')
+        self.assertEqual(utilities.get_path('foo__bar__asd', None, 'test', temp_dict), 'bar.html')
+        self.assertEqual(utilities.get_path('bar', None, 'demo', temp_dict), 'foo.html')
+        self.assertEqual(utilities.get_path('foo_bar', None, 'demo', temp_dict), 'foo.html')
+        self.assertEqual(utilities.get_path('foo__bar', None, 'demo', temp_dict), 'foo.html')
+        self.assertEqual(utilities.get_path('foo__bar_asd', None, 'demo', temp_dict), 'foo.html')
+        self.assertEqual(utilities.get_path('foo__bar__asd', None, 'demo', temp_dict), 'foo.html')
 
         # If path is dict and key missing, raise KeyError
-        self.assertRaises(KeyError, utilities.get_path, {'test': 'bar.html'}, None, 'demo')
+        self.assertRaises(KeyError, utilities.get_path, None, None, 'demo', DeployTypes({'test': 'bar.html'}))
 
     def test_get_minify(self):
         def func1():
@@ -181,65 +210,72 @@ class TestUtilities(TestCase):
 
         reset_all()
 
-        self.assertEquals(utilities.get_minify(None, 'foo.html', 'demo'), conf.STATICSITE_MINIFY['.html'])
-        self.assertEquals(utilities.get_minify(None, 'foo.css', 'demo'), conf.STATICSITE_MINIFY['.css'])
-        self.assertEquals(utilities.get_minify(None, 'foo.js', 'demo'), conf.STATICSITE_MINIFY['.js'])
-        self.assertIsNone(utilities.get_minify(None, 'foo.png', 'demo'))
+        self.assertEquals(utilities.get_minify(None, None, 'demo', 'foo.html'), conf.STATICSITE_MINIFY['.html'])
+        self.assertEquals(utilities.get_minify(None, None, 'demo', 'foo.css'), conf.STATICSITE_MINIFY['.css'])
+        self.assertEquals(utilities.get_minify(None, None, 'demo', 'foo.js'), conf.STATICSITE_MINIFY['.js'])
+        self.assertIsNone(utilities.get_minify(None, None, 'demo', 'foo.png'))
 
-        self.assertEquals(utilities.get_minify({'test': func1, '': func2}, 'foo.html', 'test'), func1)
-        self.assertEquals(utilities.get_minify({'test': func1, '': func2}, 'foo.html', 'demo'), func2)
+        self.assertEquals(utilities.get_minify(DeployTypes({'test': func1, '': func2}), None, 'test', 'foo.html'), func1)
+        self.assertEquals(utilities.get_minify(DeployTypes({'test': func1, '': func2}), None, 'demo', 'foo.html'), func2)
 
         # If minify is dict and key missing, raise KeyError
-        self.assertRaises(KeyError, utilities.get_minify, {'test': False}, 'foo.html', 'demo')
-        self.assertRaises(KeyError, utilities.get_minify, {'test': False}, 'foo.js', 'demo')
-        self.assertRaises(KeyError, utilities.get_minify, {'test': False}, 'foo.css', 'demo')
+        self.assertRaises(KeyError, utilities.get_minify, DeployTypes({'test': False}), None, 'demo', 'foo.html')
+        self.assertRaises(KeyError, utilities.get_minify, DeployTypes({'test': False}), None, 'demo', 'foo.js')
+        self.assertRaises(KeyError, utilities.get_minify, DeployTypes({'test': False}), None, 'demo', 'foo.css')
 
         # If minify is false, return correct value from settings
-        settings.STATICSITE_MINIFY = {
-            'test': {
+        settings.STATICSITE_MINIFY = DeployTypes({
+            'test': Extensions({
                 '.html': func1,
                 '.css': func2,
                 '.js': func3,
-            },
-            '': {
+            }),
+            '': Extensions({
                 '.html': func2,
                 '.css': func3,
                 '.js': func1,
-            }
-        }
-        self.assertEquals(utilities.get_minify(None, 'foo.html', 'test'), settings.STATICSITE_MINIFY['test']['.html'])
-        self.assertEquals(utilities.get_minify(None, 'foo.css', 'test'), settings.STATICSITE_MINIFY['test']['.css'])
-        self.assertEquals(utilities.get_minify(None, 'foo.js', 'test'), settings.STATICSITE_MINIFY['test']['.js'])
-        self.assertEquals(utilities.get_minify(None, 'foo.html', 'demo'), settings.STATICSITE_MINIFY['']['.html'])
-        self.assertEquals(utilities.get_minify(None, 'foo.css', 'demo'), settings.STATICSITE_MINIFY['']['.css'])
-        self.assertEquals(utilities.get_minify(None, 'foo.js', 'demo'), settings.STATICSITE_MINIFY['']['.js'])
+            }),
+        })
+        self.assertEquals(utilities.get_minify(None, None, 'test', 'foo.html'), settings.STATICSITE_MINIFY['test']['.html'])
+        self.assertEquals(utilities.get_minify(None, None, 'test', 'foo.css'), settings.STATICSITE_MINIFY['test']['.css'])
+        self.assertEquals(utilities.get_minify(None, None, 'test', 'foo.js'), settings.STATICSITE_MINIFY['test']['.js'])
+        self.assertEquals(utilities.get_minify(None, None, 'demo', 'foo.html'), settings.STATICSITE_MINIFY['']['.html'])
+        self.assertEquals(utilities.get_minify(None, None, 'demo', 'foo.css'), settings.STATICSITE_MINIFY['']['.css'])
+        self.assertEquals(utilities.get_minify(None, None, 'demo', 'foo.js'), settings.STATICSITE_MINIFY['']['.js'])
 
         # If minify is func retur always func
-        self.assertEquals(utilities.get_minify(func1, 'foo.bar', None), func1)
-        self.assertEquals(utilities.get_minify(func2, None, None), func2)
+        self.assertEquals(utilities.get_minify(func1, None, None, 'foo.bar'), func1)
+        self.assertEquals(utilities.get_minify(func2, None, None, None), func2)
 
     def test_deploy(self):
         reset_all()
+
+        base_path = 'deploy/test'
+
+        if isdir(base_path):
+            shutil.rmtree(base_path)
 
         deploy_type = 'test_deploy'
 
         settings.STATICSITE_DEFAULT_FILE_STORAGE = [
             FileSystemStorage,
-            (FileSystemStorage, {'location': 'deploy/example'}),
+            (FileSystemStorage, {'location': base_path + '/%(deploy_type)s_2'}),
         ]
-        settings.STATICSITE_DEPLOY_ROOT = 'deploy/%(deploy_type)s'
+        settings.STATICSITE_DEPLOY_ROOT = base_path + '/%(deploy_type)s'
         settings.STATICSITE_STATICFILES_DIRS = (
             ('staticsites/tests/examples/example1/static', ),
         )
 
         deploy(deploy_type)
 
-        self.assertTrue(isfile('deploy/%s/index.html' % deploy_type))
-        self.assertTrue(isfile('deploy/%s/js/test.js' % deploy_type))
-        self.assertTrue(isfile('deploy/%s/django.png' % deploy_type))
-        self.assertTrue(isfile('deploy/example/index.html'))
-        self.assertTrue(isfile('deploy/example/js/test.js'))
-        self.assertTrue(isfile('deploy/example/django.png'))
+        self.assertTrue(isfile('%s/%s/index.html' % (base_path, deploy_type)))
+        self.assertTrue(isfile('%s/%s/js/test.js' % (base_path, deploy_type)))
+        self.assertTrue(isfile('%s/%s/django.png' % (base_path, deploy_type)))
+        self.assertTrue(isfile('%s/%s/static.html' % (base_path, deploy_type)))
+        self.assertTrue(isfile('%s/%s_2/index.html' % (base_path, deploy_type)))
+        self.assertTrue(isfile('%s/%s_2/js/test.js' % (base_path, deploy_type)))
+        self.assertTrue(isfile('%s/%s_2/django.png' % (base_path, deploy_type)))
+        self.assertTrue(isfile('%s/%s_2/django.png' % (base_path, deploy_type)))
 
         self.assertEquals(utilities.read_gzip_file('deploy/%s/index.html' % deploy_type),
                           gzip.open('deploy/%s/index.html' % deploy_type).read())
@@ -248,12 +284,14 @@ class TestUtilities(TestCase):
 
         deploy(deploy_type)
 
-        self.assertTrue(isfile('deploy/%s/index.html' % deploy_type))
-        self.assertTrue(isfile('deploy/%s/js/test.js' % deploy_type))
-        self.assertFalse(isfile('deploy/%s/django.png' % deploy_type))
-        self.assertTrue(isfile('deploy/example/index.html'))
-        self.assertTrue(isfile('deploy/example/js/test.js'))
-        self.assertFalse(isfile('deploy/example/django.png'))
+        self.assertTrue(isfile('%s/%s/index.html' % (base_path, deploy_type)))
+        self.assertTrue(isfile('%s/%s/js/test.js' % (base_path, deploy_type)))
+        self.assertFalse(isfile('%s/%s/static.html' % (base_path, deploy_type)))
+        self.assertFalse(isfile('%s/%s/django.png' % (base_path, deploy_type)))
+        self.assertTrue(isfile('%s/%s_2/index.html' % (base_path, deploy_type)))
+        self.assertTrue(isfile('%s/%s_2/js/test.js' % (base_path, deploy_type)))
+        self.assertFalse(isfile('%s/%s_2/django.png' % (base_path, deploy_type)))
+        self.assertFalse(isfile('%s/%s_2/django.png' % (base_path, deploy_type)))
 
     def test_minify(self):
         reset_all()
