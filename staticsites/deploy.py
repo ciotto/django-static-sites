@@ -113,8 +113,8 @@ class DefaultDeployUtilities:
         self.deploy = Deploy(type=self.deploy_type)
         self.deploy.save()
 
-        before_deploy = utilities.get_conf('STATICSITE_BEFORE_DEPLOY', self.deploy_type)
-        after_deploy = utilities.get_conf('STATICSITE_AFTER_DEPLOY', self.deploy_type)
+        before_deploy = utilities.get_conf('STATICSITE_BEFORE_DEPLOY', deploy_type=self.deploy_type)
+        after_deploy = utilities.get_conf('STATICSITE_AFTER_DEPLOY', deploy_type=self.deploy_type)
 
         if before_deploy:
             before_deploy(deploy_type=self.deploy_type, deploy=self.deploy)
@@ -232,7 +232,7 @@ class DefaultDeployUtilities:
                     self.paths.append(path)
 
         if after_deploy:
-            after_deploy(deploy_type=self.deploy_type)
+            after_deploy(deploy_type=self.deploy_type, paths=self.paths, deploy=self.deploy)
 
 
 DeployUtilities = DefaultDeployUtilities

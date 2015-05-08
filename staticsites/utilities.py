@@ -383,7 +383,7 @@ def invalidate_paths(deploy_type, paths, *args, **kwargs):
     :param paths: The paths array
     """
     # TODO chunking invalidation to prevent error
-    distributions = get_conf('AWS_DISTRIBUTION_ID', deploy_type)
+    distributions = get_conf('AWS_DISTRIBUTION_ID', deploy_type=deploy_type)
 
     if isinstance(distributions, list):
         distributions = distributions
@@ -391,6 +391,6 @@ def invalidate_paths(deploy_type, paths, *args, **kwargs):
         distributions = [distributions]
 
     for distribution in distributions:
-        conn_cf = CloudFrontConnection(get_conf('AWS_ACCESS_KEY_ID', deploy_type),
-                                       get_conf('AWS_SECRET_ACCESS_KEY', deploy_type))
+        conn_cf = CloudFrontConnection(get_conf('AWS_ACCESS_KEY_ID',  deploy_type=deploy_type),
+                                       get_conf('AWS_SECRET_ACCESS_KEY',  deploy_type=deploy_type))
         conn_cf.create_invalidation_request(distribution, paths)

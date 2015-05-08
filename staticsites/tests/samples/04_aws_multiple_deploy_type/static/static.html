@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+
+    <title>Static page</title>
+</head>
+<body>
+    <h1>Static page</h1>
+    <h2>This is an example of static page.</h2>
+
+    <ul>
+        <li><a href="index.html">Home</a></li>
+        <li>Static page</li>
+    </ul>
+
+    <h4>The page source:</h4>
+    <xmp id="code">
+
+    </xmp>
+    <script type="text/javascript">
+    	document.getElementById('code').textContent = document.documentElement.innerHTML;
+    </script>
+
+    <p>
+        django-static-sites is powered by<br />
+        <img src="django.png" />
+    </p>
+</body>
+</html>
