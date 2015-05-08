@@ -13,7 +13,7 @@ install_requires = [str(ir.req) for ir in install_requires]
 
 setup(
     name='django-static-sites',
-    version='0.0.1',
+    version='0.0.2',
     packages=find_packages(),
     package_data={'': ['README.md']},
     include_package_data=True,
