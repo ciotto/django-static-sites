@@ -85,6 +85,7 @@ samples by `manage.py runserver --settings staticsites.tests.samples.SAMPLE_NAME
 1. [Hello world](https://github.com/ciotto/django-static-sites/tree/master/staticsites/tests/samples/01_hello_world)
 2. [Hello world (with static)](https://github.com/ciotto/django-static-sites/tree/master/staticsites/tests/samples/02_hello_world)
 3. [AWS S3/CloudFront](https://github.com/ciotto/django-static-sites/tree/master/staticsites/tests/samples/03_aws)
+4. [AWS S3/CloudFront (multiple remote)](https://github.com/ciotto/django-static-sites/tree/master/staticsites/tests/samples/04_aws_multiple_deploy_type)
 
 ###Add to an existing project
 
@@ -123,7 +124,7 @@ I use the [django-storages](https://django-storages.readthedocs.org/) AWS storag
 
 ##ToDo
 
-`django-static-sites` is work-in-progres:
+*django-static-sites* is work-in-progres:
 
 * ~~autodeploy~~
 * ~~static file optimization~~
