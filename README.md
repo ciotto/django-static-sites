@@ -77,8 +77,10 @@ functions if is declared. Now we can add the import line in the `index.html` fil
 <script type="text/javascript" src="{{ js_path }}"></script>
 ```
 
-You can see this and more samples in `staticsites/tests/samples` folder; you can launch the deploy server by 
-`manage.py runserver --settings staticsites.tests.samples.SAMPLE_NAME.settings` command.
+You can see this and more samples in `staticsites/tests/samples` folder; you can launch the deploy server for this 
+samples by `manage.py runserver --settings staticsites.tests.samples.SAMPLE_NAME.settings` command.
+
+######Other samples
 
 1. [Hello world](https://github.com/ciotto/django-static-sites/tree/master/staticsites/tests/samples/01_hello_world)
 2. [Hello world (with static)](https://github.com/ciotto/django-static-sites/tree/master/staticsites/tests/samples/02_hello_world)
@@ -110,6 +112,15 @@ if settings.DEBUG:
     ))
 ```
 
+
+##Remote deploy
+
+*django-static-sites* use the *Django* `Storage` system during the deploy procedure; by default the file are deployed 
+locally using `FileSystemStorage`, but you can use any other `Storage` with the correct settings. In the 
+[AWS S3/CloudFront](https://github.com/ciotto/django-static-sites/tree/master/staticsites/tests/samples/03_aws) samples 
+I use the [django-storages](https://django-storages.readthedocs.org/) AWS storage for deploying on Amazon S3 bucket. 
+
+
 ##ToDo
 
 `django-static-sites` is work-in-progres:
@@ -126,4 +137,5 @@ if settings.DEBUG:
 * update tests
 * dedicated *settings* module for sample
 * add tutorials
+* add 
 * ~~deploy admin console~~
