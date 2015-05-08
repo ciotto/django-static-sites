@@ -39,14 +39,11 @@ INSTALLED_APPS = (
     'django.contrib.messages',
     # 'django.contrib.staticfiles',
 
-
-    # Library for examples
-    'storages',
     # This app
     'staticsites',
 
-    # Examples
-    'staticsites.tests.examples.example1',
+    # Test
+    'staticsites.tests.samples.02_hello_world',
 )
 
 MIDDLEWARE_CLASSES = (
@@ -93,38 +90,3 @@ USE_TZ = True
 
 STATIC_ROOT = os.path.join(BASE_DIR, 'deploy/dev')
 STATIC_URL = '/static/'
-
-STATICSITE_STATICFILES_DIRS = [
-    ('staticsites/tests/examples/example1/static', ),
-]
-
-
-# S3BotoStorage configuration
-# AWS_ACCESS_KEY_ID = 'YOUR_AWS_ACCESS_KEY_ID'
-# AWS_SECRET_ACCESS_KEY = 'YOUR_AWS_SECRET_ACCESS_KEY'
-# AWS_DISTRIBUTION_ID = 'YOUR_CLOUDFRONT_DISTRIBUTION_ID'
-
-AWS_STORAGE_BUCKET_NAME = 'django-static-sites-test'
-
-AWS_ACCESS_KEY_ID = 'AKIAITL2P4MGXGC6NTBA'
-AWS_SECRET_ACCESS_KEY = 'oglzLxJzJZh3aJJg32DdHJx0jV1NXTcbRZ/c8D6h'
-AWS_DISTRIBUTION_ID = 'E2TR31FA25BSTQ'
-
-
-# Example configuration
-from staticsites.conf_dict import DeployTypes
-STATICSITE_DEPLOY_ROOT = DeployTypes({'': 'deploy/%(deploy_type)s', 'test': '/'})
-
-from django.core.files.storage import FileSystemStorage
-from storages.backends.s3boto import S3BotoStorage
-STATICSITE_DEFAULT_FILE_STORAGE = DeployTypes({
-    '': [
-        FileSystemStorage,
-    ],
-    'test': [
-        S3BotoStorage,
-    ]
-})
-
-from staticsites.utilities import invalidate_paths
-STATICSITE_AFTER_DEPLOY = DeployTypes({'': None, 'test': invalidate_paths})

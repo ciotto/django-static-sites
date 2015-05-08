@@ -151,7 +151,7 @@ def get_default_deploy_type():
     return get_conf('STATICSITE_DEFAULT_DEPLOY_TYPE')
 
 
-def get_path(func_name, app, deploy_type, path):
+def get_path(func_name=None, app=None, deploy_type=None, path=None):
     """
     Return the correct path from configuration or input value
     :param func_name: The view function name
@@ -170,7 +170,7 @@ def get_path(func_name, app, deploy_type, path):
     return path
 
 
-def get_minify(minify, app, deploy_type, path):
+def get_minify(minify=None, app=None, deploy_type=None, path=None):
     """
     Return the correct minify function from configuration or input value
     :param minify: The minify input value or conf_dict
@@ -183,7 +183,7 @@ def get_minify(minify, app, deploy_type, path):
     return get_conf('STATICSITE_MINIFY', app=app, deploy_type=deploy_type, path=path, input=minify)
 
 
-def get_gzip(gzip, app, deploy_type, path):
+def get_gzip(gzip=None, app=None, deploy_type=None, path=None):
     """
     Return the correct gzip value from configuration or input value
     :param gzip: The input gzip value or conf_dict
@@ -195,7 +195,7 @@ def get_gzip(gzip, app, deploy_type, path):
     return get_conf('STATICSITE_GZIP', app=app, deploy_type=deploy_type, path=path, input=gzip)
 
 
-def get_file_storage(file_storage, app, deploy_type, path):
+def get_file_storage(file_storage=None, app=None, deploy_type=None, path=None):
     """
     Return the correct file_storage type / file_storage tuple from configuration or input value
     :param file_storage: The input file_storage type or conf_dict
@@ -207,7 +207,7 @@ def get_file_storage(file_storage, app, deploy_type, path):
     return get_conf('STATICSITE_DEFAULT_FILE_STORAGE', app=app, deploy_type=deploy_type, path=path, input=file_storage)
 
 
-def get_storages(file_storage, app, deploy_type, path, **kwargs):
+def get_storages(file_storage=None, app=None, deploy_type=None, path=None, **kwargs):
     """
     Return the correct storage instance from configuration or input value
     :param file_storage: The input file_storage type or conf_dict
@@ -245,7 +245,7 @@ def get_storages(file_storage, app, deploy_type, path, **kwargs):
 
     return storages
 
-def get_deploy_root(deploy_root, app, deploy_type, path):
+def get_deploy_root(deploy_root=None, app=None, deploy_type=None, path=None):
     """
     Return the correct deploy_root from configuration or input value
     :param deploy_root: The deploy root
@@ -264,7 +264,7 @@ def get_deploy_root(deploy_root, app, deploy_type, path):
     return deploy_root
 
 
-def get_deploy_root_date_format(deploy_root_date_format, app, deploy_type, path):
+def get_deploy_root_date_format(deploy_root_date_format=None, app=None, deploy_type=None, path=None):
     """
     Return the correct deploy_path_date_format from configuration or input value
     :param deploy_type: The deploy type
@@ -276,7 +276,7 @@ def get_deploy_root_date_format(deploy_root_date_format, app, deploy_type, path)
     return get_conf('STATICSITE_DEPLOY_ROOT_DATE_FORMAT', app=app, deploy_type=deploy_type, path=path, input=deploy_root_date_format)
 
 
-def get_default_index(app, deploy_type):
+def get_default_index(app=None, deploy_type=None):
     """
     Return the correct default_index from configuration or input value
     :param app: The current deploying app

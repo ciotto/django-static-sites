@@ -263,7 +263,7 @@ class TestUtilities(TestCase):
         ]
         settings.STATICSITE_DEPLOY_ROOT = base_path + '/%(deploy_type)s'
         settings.STATICSITE_STATICFILES_DIRS = (
-            ('staticsites/tests/samples/01_hello_world/static', ),
+            ('staticsites/tests/samples/02_hello_world/static', ),
         )
 
         deploy(deploy_type)

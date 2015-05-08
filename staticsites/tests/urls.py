@@ -16,11 +16,13 @@ urlpatterns = patterns('',
 # Serve default deploy folder as site root
 if settings.DEBUG:
     urlpatterns += patterns('', (
-        r'^(?:%s)?$' % get_default_index(),
+        r'^(?:%s)?$' % get_default_index(deploy_type='dev'),
         'django.views.static.serve',
-         {'document_root': join(dirname(settings.BASE_DIR), get_deploy_root()), 'path': get_default_index()}
+         {
+            'document_root': get_deploy_root(deploy_type='dev'), 'path': get_default_index(deploy_type='dev')
+         }
     ), (
         r'^(?P<path>.*)$',
         'django.views.static.serve',
-        {'document_root': join(dirname(settings.BASE_DIR), get_deploy_root())}
+        {'document_root': get_deploy_root(deploy_type='dev')}
     ))

@@ -4,6 +4,8 @@
 template system. You can render an existing *Django* view by adding a decorator or you can create an empty project
 optimized for *django-static-sites* use. You can specify multiple configuration for multiple deploy type.
 
+[GitHub](https://github.com/ciotto/django-static-sites)
+
 
 ##How to start
 
@@ -75,7 +77,12 @@ functions if is declared. Now we can add the import line in the `index.html` fil
 <script type="text/javascript" src="{{ js_path }}"></script>
 ```
 
-You can also add all your static file in a static file folder of your site application.
+You can see this and more samples in `staticsites/tests/samples` folder; you can launch the deploy server by 
+`manage.py runserver --settings staticsites.tests.samples.SAMPLE_NAME.settings` command.
+
+1. [Hello world](https://github.com/ciotto/django-static-sites/tree/master/staticsites/tests/samples/01_hello_world)
+2. [Hello world (with static)](https://github.com/ciotto/django-static-sites/tree/master/staticsites/tests/samples/02_hello_world)
+3. [AWS S3/CloudFront](https://github.com/ciotto/django-static-sites/tree/master/staticsites/tests/samples/03_aws)
 
 ###Add to an existing project
 
@@ -91,13 +98,15 @@ If you want to use Django development server to serve the deployed static site:
 # Serve default deploy folder as site root
 if settings.DEBUG:
     urlpatterns += patterns('', (
-        r'^(?:%s)?$' % get_default_index(),
+        r'^(?:%s)?$' % get_default_index(deploy_type='dev'),
         'django.views.static.serve',
-         {'document_root': join(dirname(settings.BASE_DIR), get_deploy_root()), 'path': get_default_index()}
+         {
+            'document_root': get_deploy_root(deploy_type='dev'), 'path': get_default_index(deploy_type='dev')
+         }
     ), (
         r'^(?P<path>.*)$',
         'django.views.static.serve',
-        {'document_root': join(dirname(settings.BASE_DIR), get_deploy_root())}
+        {'document_root': get_deploy_root(deploy_type='dev')}
     ))
 ```
 

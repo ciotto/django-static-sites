@@ -77,3 +77,7 @@ USE_TZ = True
 
 STATIC_ROOT = os.path.join(BASE_DIR, 'deploy/dev')
 STATIC_URL = '/static/'
+
+# Add your statics folders here
+STATICSITE_STATICFILES_DIRS = [
+]

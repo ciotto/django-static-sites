@@ -43,7 +43,7 @@ INSTALLED_APPS = (
     'staticsites',
 
     # Examples
-    'staticsites.tests.samples.01_hello_world',
+    'staticsites.tests.samples.02_hello_world',
 )
 
 MIDDLEWARE_CLASSES = (
@@ -90,3 +90,7 @@ USE_TZ = True
 
 STATIC_ROOT = os.path.join(BASE_DIR, 'deploy/dev')
 STATIC_URL = '/static/'
+
+STATICSITE_STATICFILES_DIRS = [
+    ('staticsites/tests/samples/02_hello_world/static', ),
+]

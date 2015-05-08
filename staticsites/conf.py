@@ -7,7 +7,7 @@ from staticsites import minify, conf_dict
 
 STATICSITE_DEPLOY_ROOT = conf_dict.DeployTypes({
     'dev': 'deploy/%(deploy_type)s',
-    '': 'deploy/%(deploy_type)s_%(asctime)s'
+    '': 'deploy/%(deploy_type)s/%(asctime)s'
 })
 
 STATICSITE_DEPLOY_ROOT_DATE_FORMAT = '%Y-%m-%d_%H.%M.%S'
