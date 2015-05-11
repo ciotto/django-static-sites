@@ -6,7 +6,7 @@ import inspect
 
 def staticview(*args, **kwargs):
     def staticview_decorator(func):
-        # Use for find annotated functions
+        # Used for find annotated functions
         func.is_static_view = True
 
         func.path = kwargs.get('path', None)
@@ -16,6 +16,7 @@ def staticview(*args, **kwargs):
         func.minify = kwargs.get('minify', None)
         func.gzip = kwargs.get('gzip', None)
         func.file_storage = kwargs.get('file_storage', None)
+        func.encoding = kwargs.get('encoding', None)
 
 
         return func

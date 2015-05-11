@@ -1,17 +1,14 @@
 __author__ = 'Christian Bianciotto'
 
 
-from StringIO import StringIO
 from gzip import GzipFile
 
-from genericpath import exists
-from os import makedirs
 from os.path import abspath, join, getmtime
 from staticsites import utilities
 from datetime import datetime
 import hashlib
 import logging
-import io
+import StringIO
 
 from inspect import getmembers, isfunction
 from django.conf import settings
@@ -23,8 +20,9 @@ from models import DeployOperation, Deploy
 
 
 class DefaultDeployUtilities:
-    def __init__(self, deploy_type):
+    def __init__(self, deploy_type, force):
         self.deploy_type = deploy_type
+        self.force = force
         self.deploy = None
         self.storage = None
 
@@ -39,10 +37,9 @@ class DefaultDeployUtilities:
             file_storage = staticfiles_dir[1]
 
         minify = utilities.get_minify(None, None, self.deploy_type, sub_path)
-
         gzip = utilities.get_gzip(None, None, self.deploy_type, sub_path)
-
         storages = utilities.get_storages(file_storage, None, self.deploy_type, sub_path, **kwargs)
+        encoding = utilities.get_encoding(None, None, self.deploy_type, sub_path)
 
         for self.storage in storages:
             file = None
@@ -51,7 +48,7 @@ class DefaultDeployUtilities:
 
                 if self.storage.exists(sub_path):
                     # Check if need update by checking modification date
-                    if datetime.fromtimestamp(getmtime(full_path)) > self.storage.modified_time(sub_path):
+                    if self.force or datetime.fromtimestamp(getmtime(full_path)) > self.storage.modified_time(sub_path):
                         self.storage.delete(sub_path)
                         operation_type = 'U'
                     else:
@@ -62,22 +59,25 @@ class DefaultDeployUtilities:
                     if minify or gzip:
                         if minify:
                             content = utilities.read_file(full_path)
-                            content = minify(content)
+                            try:
+                                content = minify(content)
+                                content = content.encode(encoding)
+                            except Exception as e:
+                                logging.warning('Error occurred during minify on file %s: %s' % (full_path, e.message))
                         else:
                             content = utilities.read_binary(full_path)
 
                         if gzip:
                             #TODO gzip config discriminate extension
                             #TODO append .gz extension (config)
-                            file = StringIO()
+                            file = StringIO.StringIO()
                             gzip_file = GzipFile(fileobj=file, mode="w")
                             gzip_file.write(content)
                             gzip_file.close()
                         else:
-                            file = io.StringIO(content)
+                            file = StringIO.StringIO(content)
                     else:
-                        file = open(full_path, 'r')
-
+                        file = open(full_path, 'rb')
                     self.storage.save(sub_path, file)
 
                     if operation_type is 'U':
@@ -142,10 +142,12 @@ class DefaultDeployUtilities:
                             minify = function.minify
                             gzip = function.gzip
                             file_storage = function.file_storage
+                            encoding = function.encoding
 
                             path = utilities.get_path(func_name, appname, self.deploy_type, path)
                             minify = utilities.get_minify(minify, appname, self.deploy_type, path)
                             gzip = utilities.get_gzip(gzip, appname, self.deploy_type, path)
+                            encoding = utilities.get_encoding(encoding, appname, self.deploy_type, path)
 
                             if 'deploy_type' in function.func_code.co_varnames:
                                 response = function(HttpRequest(), self.deploy_type)
@@ -156,6 +158,7 @@ class DefaultDeployUtilities:
                             content = unicode(response.content)
                             if minify:
                                 content = minify(content)
+                            content = content.encode('UTF-8')
 
                             storages = utilities.get_storages(file_storage, None, self.deploy_type, None)
 
@@ -176,7 +179,7 @@ class DefaultDeployUtilities:
                                         if deploy_operations:
                                             last_dpo = deploy_operations[0]
 
-                                    if last_dpo and last_dpo.hash and new_dpo.hash == last_dpo.hash:
+                                    if not self.force and last_dpo and last_dpo.hash and new_dpo.hash == last_dpo.hash:
                                         new_dpo.operation_type = 'NU'
                                         logging.info('File %s not updated' % path)
                                     else:
@@ -189,12 +192,12 @@ class DefaultDeployUtilities:
                                         if gzip:
                                             #TODO gzip config discriminate extension
                                             #TODO append .gz extension (config)
-                                            file = StringIO()
+                                            file = StringIO.StringIO()
                                             gzip_file = GzipFile(fileobj=file, mode="w")
                                             gzip_file.write(content)
                                             gzip_file.close()
                                         else:
-                                            file = io.StringIO(content)
+                                            file = StringIO.StringIO(content)
 
                                         self.storage.save(path, file)
 
@@ -238,5 +241,5 @@ class DefaultDeployUtilities:
 DeployUtilities = DefaultDeployUtilities
 
 
-def deploy(deploy_type=utilities.get_default_deploy_type()):
-    DeployUtilities(deploy_type=deploy_type).start()
+def deploy(deploy_type=utilities.get_default_deploy_type(), force=False):
+    DeployUtilities(deploy_type=deploy_type, force=force).start()

@@ -5,7 +5,6 @@ import pickle
 from StringIO import StringIO
 from conf_dict import BaseDict
 
-import codecs
 import gzip
 from os.path import isfile
 from os import listdir
@@ -195,6 +194,18 @@ def get_gzip(gzip=None, app=None, deploy_type=None, path=None):
     return get_conf('STATICSITE_GZIP', app=app, deploy_type=deploy_type, path=path, input=gzip)
 
 
+def get_encoding(encoding=None, app=None, deploy_type=None, path=None):
+    """
+    Return the correct encoding value from configuration or input value
+    :param encoding: The input encoding value or conf_dict
+    :param app: The current deploying app
+    :param deploy_type: The deploy type
+    :param path: The current destination path
+    :return: The correct encoding value
+    """
+    return get_conf('STATICSITE_ENCODING', app=app, deploy_type=deploy_type, path=path, input=encoding)
+
+
 def get_file_storage(file_storage=None, app=None, deploy_type=None, path=None):
     """
     Return the correct file_storage type / file_storage tuple from configuration or input value
@@ -334,7 +345,7 @@ def read_binary(path):
     """
     file = None
     try:
-        file = open(path, 'r')
+        file = open(path, 'rb')
 
         return file.read()
     finally:
@@ -350,7 +361,7 @@ def read_file(path):
     """
     file = None
     try:
-        file = codecs.open(path, 'r', 'UTF-8')
+        file = open(path, 'r')
 
         return file.read()
     finally:

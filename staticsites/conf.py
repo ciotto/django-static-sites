@@ -20,6 +20,8 @@ STATICSITE_DEFAULT_INDEX = 'index.html'
 
 STATICSITE_GZIP = conf_dict.DeployTypes({'dev': False, '': True})
 
+STATICSITE_ENCODING = 'UTF-8'
+
 STATICSITE_HTML_EXTENSIONS = ['.html', '.htm']
 STATICSITE_CSS_EXTENSIONS = ['.css']
 STATICSITE_JS_EXTENSIONS = ['.js', '.json']

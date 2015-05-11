@@ -308,13 +308,13 @@ class TestUtilities(TestCase):
 </head>
 <body>
     <p>
-    °é*§çé§ç:ç*
+    ° | à | á | â | ã | æ
     </p>
 </body>
 </html>
 '''
         html_min = u'<!DOCTYPE html>\n<html lang="it"><head><meta charset="UTF-8"><title>Test</title></head><body>' \
-                   u'<p> °é*§çé§ç:ç* </p></body></html>'
+                   u'<p> ° | à | á | â | ã | æ </p></body></html>'
 
         self.assertEquals(minify.xml(html), html_min)
         self.assertEquals(minify.xml(html, comment), ('<!-- %s -->\n' % comment) + html_min)
@@ -345,13 +345,13 @@ a {
 
 
     height: 100%;
-    background: url("°é*§çé§ç:ç*.png");
+    background: url("°àáâãæ.png");
 }
 
 '''
         css_min = u'@-ms-viewport{width:device-width}' \
                   u'@media only screen and (min-device-width:800px){html{overflow:hidden}}html{height:100%;width:100%}' \
-                  u'a{color:#e21f18}#test,.test{width:100%;height:100%;background:url("°é*§çé§ç:ç*.png")}'
+                  u'a{color:#e21f18}#test,.test{width:100%;height:100%;background:url("°àáâãæ.png")}'
 
         self.assertEquals(minify.css(css), css_min)
         self.assertEquals(minify.css(css, comment), ('/* %s */\n' % comment) + css_min)
@@ -363,12 +363,12 @@ a {
 function log(message) {
     if (DEBUG && console && console.log) {
         console.log(message);
-        console.log('°é*§çé§ç:ç*');
+        console.log('°àáâãæ');
     }
 }
 '''
         js_min = u'function log(message){if(DEBUG&&console&&console.log){console.log(message);' \
-                 u'console.log(\'°é*§çé§ç:ç*\');}}'
+                 u'console.log(\'°àáâãæ\');}}'
 
         self.assertEquals(minify.js(js), js_min)
         self.assertEquals(minify.js(js, comment), ('/* %s */\n' % comment) + js_min)
