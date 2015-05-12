@@ -54,11 +54,12 @@ from django.core.files.storage import FileSystemStorage
 from storages.backends.s3boto import S3BotoStorage
 STATICSITE_DEFAULT_FILE_STORAGE = DeployTypes({
     '': FileSystemStorage,
-    'test': S3BotoStorage,
+    'test': (S3BotoStorage, {'headers': {'Content-Encoding': 'gzip'}}),
 })
 ```
 
-Now, we tell *django-static-sites* to use `S3BotoStorage` for *test* deploy.
+Now, we tell *django-static-sites* to use `S3BotoStorage` for *test* deploy. Using a tuple instead a Storage class, 
+allows us to pass the *Content-Encoding* header to *S3BotoStorage* constructor.
 
 
 ######CloudFront invalidation

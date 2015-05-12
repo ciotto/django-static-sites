@@ -116,7 +116,7 @@ from django.core.files.storage import FileSystemStorage
 from storages.backends.s3boto import S3BotoStorage
 STATICSITE_DEFAULT_FILE_STORAGE = DeployTypes({
     '': FileSystemStorage,
-    'test': S3BotoStorage,
+    'test': (S3BotoStorage, {'headers': {'Content-Encoding': 'gzip'}}),
 })
 
 from staticsites.utilities import invalidate_paths
