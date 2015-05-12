@@ -2,7 +2,7 @@ __author__ = 'Christian Bianciotto'
 
 
 from django.core.files.storage import FileSystemStorage
-from staticsites import minify, conf_dict
+from staticsites import minify, conf_dict, utilities
 
 
 STATICSITE_DEPLOY_ROOT = conf_dict.DeployTypes({
@@ -19,6 +19,18 @@ STATICSITE_DEFAULT_DEPLOY_TYPE = 'dev'
 STATICSITE_DEFAULT_INDEX = 'index.html'
 
 STATICSITE_GZIP = conf_dict.DeployTypes({'dev': False, '': True})
+# TODO use list of regex
+STATICSITE_GZIP_IGNORE_FILES = []
+
+# TODO use list of regex
+STATICSITE_IGNORE_FILES = [
+    # Mac OS x
+    '.DS_Store',
+
+    # Windows
+    'Thumbs.db',
+]
+STATICSITE_IGNORE = utilities.ignore
 
 STATICSITE_ENCODING = 'UTF-8'
 
@@ -40,3 +52,5 @@ for extension in STATICSITE_CSS_EXTENSIONS:
 
 for extension in STATICSITE_JS_EXTENSIONS:
     STATICSITE_MINIFY[extension] = minify.js
+# TODO use list of regex
+STATICSITE_MINIFY_IGNORE_FILES = []

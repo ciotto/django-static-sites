@@ -10,7 +10,6 @@ from os.path import isfile
 from os import listdir
 from datetime import datetime
 
-from staticsites import conf
 from os.path import splitext, join
 from django.conf import settings
 from boto.cloudfront import CloudFrontConnection
@@ -131,6 +130,7 @@ def get_conf(key, app='', deploy_type='', path='', input=None):
                 return value.get(app=app, deploy_type=deploy_type, extension=file_extension)
             return value
 
+        from staticsites import conf
         value = getattr(conf, key)
         if isinstance(value, BaseDict):
             try:
@@ -299,7 +299,7 @@ def get_default_index(app=None, deploy_type=None):
 
 # Navigate into path tree
 
-def iterate_dir(path, callback, ignore=None, *args, **kwargs):
+def iterate_dir(path, callback, ignore=None, deploy_type=None, *args, **kwargs):
     """
     Recursive function, iterate file and call the callback function by passing root path, sub_path and extra args/kwargs
     :param path: The root path
@@ -317,7 +317,7 @@ def iterate_dir(path, callback, ignore=None, *args, **kwargs):
 
         ignore_files = []
         if ignore:
-            ignore_files = ignore(tmp_dir, files)
+            ignore_files = ignore(tmp_dir, files, deploy_type=deploy_type)
 
         for node in files:
             node_path = join(tmp_dir, node)
@@ -405,3 +405,19 @@ def invalidate_paths(deploy_type, paths, *args, **kwargs):
         conn_cf = CloudFrontConnection(get_conf('AWS_ACCESS_KEY_ID',  deploy_type=deploy_type),
                                        get_conf('AWS_SECRET_ACCESS_KEY',  deploy_type=deploy_type))
         conn_cf.create_invalidation_request(distribution, paths)
+
+
+# Other
+
+def ignore(sub_path, files, deploy_type=None):
+    ignore_files = get_conf('STATICSITE_IGNORE_FILES', deploy_type=deploy_type)
+
+    excluded = []
+
+    for file in files:
+        full_path = join(sub_path, file)
+
+        if full_path in ignore_files:
+            excluded.append(file)
+
+    return excluded

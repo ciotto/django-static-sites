@@ -36,10 +36,18 @@ class DefaultDeployUtilities:
         if staticfiles_dir and len(staticfiles_dir) > 1:
             file_storage = staticfiles_dir[1]
 
+        # TODO get also from staticfiles dir (trasforme tupla to dict?)
         minify = utilities.get_minify(None, None, self.deploy_type, sub_path)
         gzip = utilities.get_gzip(None, None, self.deploy_type, sub_path)
         storages = utilities.get_storages(file_storage, None, self.deploy_type, sub_path, **kwargs)
         encoding = utilities.get_encoding(None, None, self.deploy_type, sub_path)
+
+        gzip_ignore_files = utilities.get_conf('STATICSITE_GZIP_IGNORE_FILES',
+                                               deploy_type=self.deploy_type,
+                                               path=sub_path)
+        minify_ignore_files = utilities.get_conf('STATICSITE_MINIFY_IGNORE_FILES',
+                                                 deploy_type=self.deploy_type,
+                                                 path=sub_path)
 
         for self.storage in storages:
             file = None
@@ -57,18 +65,18 @@ class DefaultDeployUtilities:
 
                 if operation_type is not 'NU':
                     if minify or gzip:
-                        if minify:
+                        if minify and sub_path not in minify_ignore_files:
                             content = utilities.read_file(full_path)
+                            content = content.decode(encoding, errors='ignore')
+                            content = content.encode(encoding, errors='ignore')
                             try:
                                 content = minify(content)
-                                content = content.encode(encoding)
                             except Exception as e:
                                 logging.warning('Error occurred during minify on file %s: %s' % (full_path, e.message))
                         else:
                             content = utilities.read_binary(full_path)
 
-                        if gzip:
-                            #TODO gzip config discriminate extension
+                        if gzip and sub_path not in gzip_ignore_files:
                             #TODO append .gz extension (config)
                             file = StringIO.StringIO()
                             gzip_file = GzipFile(fileobj=file, mode="w")
@@ -126,7 +134,7 @@ class DefaultDeployUtilities:
                 path = abspath(staticfiles_dir[0])
 
                 #TODO implement
-                ignore = None
+                ignore = utilities.get_conf('STATICSITE_IGNORE', deploy_type=self.deploy_type)
 
                 utilities.iterate_dir(path, self.copy, ignore, staticfiles_dir)
 
@@ -149,16 +157,26 @@ class DefaultDeployUtilities:
                             gzip = utilities.get_gzip(gzip, appname, self.deploy_type, path)
                             encoding = utilities.get_encoding(encoding, appname, self.deploy_type, path)
 
+                            gzip_ignore_files = utilities.get_conf('STATICSITE_GZIP_IGNORE_FILES',
+                                                                   deploy_type=self.deploy_type,
+                                                                   path=path)
+                            minify_ignore_files = utilities.get_conf('STATICSITE_MINIFY_IGNORE_FILES',
+                                                                     deploy_type=self.deploy_type,
+                                                                     path=path)
+
                             if 'deploy_type' in function.func_code.co_varnames:
                                 response = function(HttpRequest(), self.deploy_type)
                             else:
                                 response = function(HttpRequest())
 
-                            #TODO encoding
-                            content = unicode(response.content)
-                            if minify:
-                                content = minify(content)
-                            content = content.encode('UTF-8')
+                            content = response.content
+                            content = content.decode(encoding, errors='ignore')
+                            content = content.encode(encoding, errors='ignore')
+                            if minify and path not in minify_ignore_files:
+                                try:
+                                    content = minify(content)
+                                except Exception as e:
+                                    logging.warning('Error occurred during minify on view %s: %s' % (func_name, e.message))
 
                             storages = utilities.get_storages(file_storage, None, self.deploy_type, None)
 
@@ -189,7 +207,7 @@ class DefaultDeployUtilities:
                                 if new_dpo.operation_type is not 'NU':
                                     file = None
                                     try:
-                                        if gzip:
+                                        if gzip and path not in gzip_ignore_files:
                                             #TODO gzip config discriminate extension
                                             #TODO append .gz extension (config)
                                             file = StringIO.StringIO()
