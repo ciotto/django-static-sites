@@ -136,7 +136,6 @@ I use the [django-storages](https://django-storages.readthedocs.org/) AWS storag
 * ~~deploy on multiple remote~~
 * add param check and raise Exception
 * update tests
-* dedicated *settings* module for sample
-* add tutorials
-* add 
+* ~~dedicated *settings* module for sample~~
+* ~~add tutorials~~
 * ~~deploy admin console~~

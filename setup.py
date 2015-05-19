@@ -26,7 +26,7 @@ setup(
     url='https://github.com/ciotto/django-static-sites',
     author='Christian Bianciotto',
     author_email='bianciotto@bitcircle.com',
-    package_dir={'django-static-admin': 'lib/django-static-admin'},
+    package_dir={'django-static-sites': 'lib/django-static-sites'},
     classifiers=[
         'Environment :: Web Environment',
         'Framework :: Django',
