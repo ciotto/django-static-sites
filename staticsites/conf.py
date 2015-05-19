@@ -19,18 +19,19 @@ STATICSITE_DEFAULT_DEPLOY_TYPE = 'dev'
 STATICSITE_DEFAULT_INDEX = 'index.html'
 
 STATICSITE_GZIP = conf_dict.DeployTypes({'dev': False, '': True})
-# TODO use list of regex
 STATICSITE_GZIP_IGNORE_FILES = []
 
-# TODO use list of regex
 STATICSITE_IGNORE_FILES = [
     # Mac OS x
     '.DS_Store',
 
     # Windows
     'Thumbs.db',
+
+    # Subversion files
+    '.svn',
 ]
-STATICSITE_IGNORE = utilities.ignore
+STATICSITE_IGNORE = utilities.ignore_files
 
 STATICSITE_ENCODING = 'UTF-8'
 
@@ -52,5 +53,4 @@ for extension in STATICSITE_CSS_EXTENSIONS:
 
 for extension in STATICSITE_JS_EXTENSIONS:
     STATICSITE_MINIFY[extension] = minify.js
-# TODO use list of regex
 STATICSITE_MINIFY_IGNORE_FILES = []

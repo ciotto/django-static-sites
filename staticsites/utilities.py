@@ -1,3 +1,5 @@
+import fnmatch
+
 __author__ = 'Christian Bianciotto'
 
 
@@ -6,6 +8,7 @@ from StringIO import StringIO
 from conf_dict import BaseDict
 
 import gzip
+import re
 from os.path import isfile
 from os import listdir
 from datetime import datetime
@@ -317,7 +320,7 @@ def iterate_dir(path, callback, ignore=None, deploy_type=None, *args, **kwargs):
 
         ignore_files = []
         if ignore:
-            ignore_files = ignore(tmp_dir, files, deploy_type=deploy_type)
+            ignore_files = ignore(path, sub_path, files, deploy_type=deploy_type)
 
         for node in files:
             node_path = join(tmp_dir, node)
@@ -409,15 +412,51 @@ def invalidate_paths(deploy_type, paths, *args, **kwargs):
 
 # Other
 
-def ignore(sub_path, files, deploy_type=None):
-    ignore_files = get_conf('STATICSITE_IGNORE_FILES', deploy_type=deploy_type)
+def git_match(pattern, path):
+    """
+    Return True if path match the pattern (git ignore style)
+    :param pattern: The pattern
+    :param path: The path
+    :return: True if path match the pattern, False otherwise
+    """
+    return re.search(fnmatch.translate(pattern.lower()), path.lower())
 
-    excluded = []
+def ignore_file(path, deploy_type=None):
+    """
+    Return a filtered list of ignored files in sub_path.
+    :param path: The root path
+    :param sub_path: The current sub path
+    :param files: Files in current position
+    :param deploy_type: The deploy_type
+    :return: Ignored files in sub_path
+    """
+    ignore_files_patterns = get_conf('STATICSITE_IGNORE_FILES', deploy_type=deploy_type)
+
+    ignore = False
+
+    for pattern in ignore_files_patterns:
+        if not pattern.startswith('!') and git_match(pattern, path):
+            ignore = True
+        elif pattern.startswith('!') and git_match(pattern[1:], path):
+            ignore = False
+
+    return ignore
+
+def ignore_files(path, sub_path, files, deploy_type=None):
+    """
+    Return a filtered list of ignored files in sub_path.
+    :param path: The root path
+    :param sub_path: The current sub path
+    :param files: Files in current position
+    :param deploy_type: The deploy_type
+    :return: Ignored files in sub_path
+    """
+    ignore = []
 
     for file in files:
         full_path = join(sub_path, file)
 
-        if full_path in ignore_files:
-            excluded.append(file)
+        if ignore_file(full_path, deploy_type=None):
+            ignore.append(file)
 
-    return excluded
+    return ignore

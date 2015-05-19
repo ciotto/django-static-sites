@@ -8,7 +8,7 @@ from django.core.files.storage import FileSystemStorage
 from staticsites.conf_dict import BaseDict, DeployTypes, Apps, Extensions
 import minify
 
-from os.path import join, isfile, isdir
+from os.path import join, isfile, isdir, normcase
 from staticsites import conf
 from django.conf import settings
 from django.test import TestCase
@@ -33,8 +33,14 @@ def reset_all():
     reset('STATICSITE_DEFAULT_INDEX')
 
     reset('STATICSITE_GZIP')
+    reset('STATICSITE_GZIP_IGNORE_FILES')
 
-    reset('STATSTATICSITE_HTML_EXTENSIONSICSITE_GZIP')
+    reset('STATICSITE_IGNORE_FILES')
+    reset('STATICSITE_IGNORE')
+
+    reset('STATICSITE_ENCODING')
+
+    reset('STATICSITE_HTML_EXTENSIONS')
     reset('STATICSITE_CSS_EXTENSIONS')
     reset('STATICSITE_JS_EXTENSIONS')
     reset('STATICSITE_XML_EXTENSIONS')
@@ -43,6 +49,7 @@ def reset_all():
     reset('STATICSITE_STATICFILES_DIRS')
 
     reset('STATICSITE_MINIFY_FUNC')
+    reset('STATICSITE_MINIFY_IGNORE_FILES')
 
 
 class TestUtilities(TestCase):
@@ -247,6 +254,41 @@ class TestUtilities(TestCase):
         self.assertEquals(utilities.get_minify(func1, None, None, 'foo.bar'), func1)
         self.assertEquals(utilities.get_minify(func2, None, None, None), func2)
 
+    def test_ignore(self):
+        reset_all()
+
+        files = [
+            'foo',
+            'test/Foo',
+            'test/bar/foo',
+            'bar',
+            'test/bar',
+        ]
+
+        settings.STATICSITE_IGNORE_FILES = [
+            'foo',
+            'test/*',
+        ]
+        self.assertEquals(sorted(utilities.ignore_files('foo', '', files)), ['test/Foo', 'test/bar', 'foo', 'test/bar/foo'])
+
+        settings.STATICSITE_IGNORE_FILES = [
+            'foo',
+            '!test/bar/foo',
+            'test/*',
+        ]
+        self.assertEquals(sorted(utilities.ignore_files('foo', '', files)), ['test/Foo', 'test/bar', 'foo'])
+
+        settings.STATICSITE_IGNORE_FILES = [
+            'Foo',
+            'test/*',
+        ]
+        self.assertEquals(sorted(utilities.ignore_files('foo', '', files)), ['test/Foo', 'test/bar', 'foo', 'test/bar/foo'])
+
+        settings.STATICSITE_IGNORE_FILES = [
+            'Foo',
+        ]
+        self.assertEquals(sorted(utilities.ignore_files('foo', '', files)), ['test/Foo', 'foo', 'test/bar/foo'])
+
     def test_deploy(self):
         reset_all()
 
@@ -292,6 +334,9 @@ class TestUtilities(TestCase):
         self.assertTrue(isfile('%s/%s_2/js/test.js' % (base_path, deploy_type)))
         self.assertFalse(isfile('%s/%s_2/django.png' % (base_path, deploy_type)))
         self.assertFalse(isfile('%s/%s_2/django.png' % (base_path, deploy_type)))
+
+        if isdir(base_path):
+            shutil.rmtree(base_path)
 
     def test_minify(self):
         reset_all()
