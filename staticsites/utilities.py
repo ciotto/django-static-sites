@@ -15,7 +15,6 @@ from datetime import datetime
 
 from os.path import splitext, join
 from django.conf import settings
-from boto.cloudfront import CloudFrontConnection
 
 
 # Dump / load storage
@@ -396,6 +395,8 @@ def invalidate_paths(deploy_type, paths, *args, **kwargs):
     :param deploy_type: The deploy type
     :param paths: The paths array
     """
+    from boto.cloudfront import CloudFrontConnection
+    
     # TODO chunking invalidation to prevent error
     distributions = get_conf('AWS_DISTRIBUTION_ID', deploy_type=deploy_type)
 
