@@ -15,7 +15,7 @@ setup(
     name='django-static-sites',
     version='0.0.4',
     packages=find_packages(),
-    package_data={'': ['README.md']},
+    package_data={'staticsites': ['templates/*/*-tpl', 'templates/*/*/*-tpl']},
     include_package_data=True,
     license='GNU GENERAL PUBLIC LICENSE',
     description='An easy to use Django app to make static site.',
