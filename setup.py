@@ -13,7 +13,7 @@ install_requires = [str(ir.req) for ir in install_requires]
 
 setup(
     name='django-static-sites',
-    version='0.0.4',
+    version='0.0.5',
     packages=find_packages(),
     package_data={'staticsites': ['templates/*/*-tpl', 'templates/*/*/*-tpl']},
     include_package_data=True,
