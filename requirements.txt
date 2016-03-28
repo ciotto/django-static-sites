@@ -1,4 +1,4 @@
-Django>=1.7.0
+Django>=1.9,<1.10
 htmlmin==0.1.6
 slimit==0.8.1
 ply==3.4
