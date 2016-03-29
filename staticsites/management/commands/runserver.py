@@ -10,22 +10,25 @@ from django.apps import apps
 from django.contrib.staticfiles.management.commands import runserver
 
 from staticsites.deploy import deploy
+from staticsites import utilities
 
 
-# Return views.py file of the installed app
+# Return also all file of the installed app
 def gen_filenames(only_new=False):
     filenames = _gen_filenames(only_new)
 
-    views_files = []
+    apps_files = []
 
-    #TODO add also all templates files
+    def add_files(path, sub_path, *args, **kwargs):
+        full_path = join(path, sub_path)
+        if isfile(full_path):
+            apps_files.append(full_path)
 
     for app_config in reversed(list(apps.get_app_configs())):
-        views_file = join(app_config.path, 'views.py')
-        if isfile(views_file):
-            views_files.append(views_file)
+        ignore = utilities.get_conf('STATICSITE_IGNORE', deploy_type=autoreload.deploy_type)
+        utilities.iterate_dir(app_config.path, add_files, ignore)
 
-    return filenames + views_files
+    return filenames + apps_files
 
 
 class Command(runserver.Command):
@@ -48,6 +51,7 @@ class Command(runserver.Command):
 
         if use_reloader:
             if deploy_type:
+                autoreload.deploy_type = deploy_type
                 autoreload.gen_filenames = gen_filenames
             autoreload.main(self.inner_run, args, options)
         else:
