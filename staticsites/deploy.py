@@ -67,8 +67,6 @@ class DefaultDeployUtilities:
                     if minify or gzip:
                         if minify and sub_path not in minify_ignore_files:
                             content = utilities.read_file(full_path)
-                            content = content.decode(encoding, errors='ignore')
-                            content = content.encode(encoding, errors='ignore')
                             try:
                                 content = minify(content)
                             except Exception as e:
@@ -133,7 +131,6 @@ class DefaultDeployUtilities:
             for staticfiles_dir in staticfiles_dirs:
                 path = abspath(staticfiles_dir[0])
 
-                #TODO implement
                 ignore = utilities.get_conf('STATICSITE_IGNORE', deploy_type=self.deploy_type)
 
                 utilities.iterate_dir(path, self.copy, ignore, staticfiles_dir)
@@ -170,11 +167,9 @@ class DefaultDeployUtilities:
                                 response = function(HttpRequest())
 
                             content = response.content
-                            content = content.decode(encoding, errors='ignore')
-                            content = content.encode(encoding, errors='ignore')
                             if minify and path not in minify_ignore_files:
                                 try:
-                                    content = minify(content)
+                                        content = minify(content, encoding=encoding)
                                 except Exception as e:
                                     logging.warning('Error occurred during minify on view %s: %s' % (func_name, e.message))
 

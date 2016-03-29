@@ -6,11 +6,13 @@ import htmlmin
 import slimit
 
 
-def xml(content, comment=''):
+def xml(content, comment='', encoding=None):
     if comment:
         comment = '<!-- %s -->\n' % comment
     else:
         comment = ''
+    if encoding and type(content) is not unicode:
+        content = unicode(content, encoding)
     return comment + htmlmin.minify(content,
                                     remove_comments=True,
                                     remove_empty_space=True,
@@ -23,20 +25,23 @@ def xml(content, comment=''):
                                     pre_attr='pre')
 
 
-def css(content, comment=''):
+def css(content, comment='', encoding=None):
     if comment:
         comment = '/* %s */\n' % comment
     else:
         comment = ''
-
+    if encoding and type(content) is not unicode:
+        content = unicode(content, encoding)
     return comment + csscompressor.compress(content)
 
 
-def js(content, comment=''):
+def js(content, comment='', encoding=None):
     if comment:
         comment = '/* %s */\n' % comment
     else:
         comment = ''
+    if encoding and type(content) is not unicode:
+        content = unicode(content, encoding)
     return comment + slimit.minify(content,
                                    mangle=False,
                                    mangle_toplevel=False)

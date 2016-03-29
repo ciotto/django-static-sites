@@ -343,7 +343,22 @@ class TestUtilities(TestCase):
 
         comment = 'My comment'
 
-        html = u'''
+        html = '''
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+
+    <title>Test</title>
+</head>
+<body>
+    <p>
+    ° | à | á | â | ã | æ
+    </p>
+</body>
+</html>
+'''
+        htmlu = u'''
 <!DOCTYPE html>
 <html lang="it">
 <head>
@@ -361,10 +376,42 @@ class TestUtilities(TestCase):
         html_min = u'<!DOCTYPE html>\n<html lang="it"><head><meta charset="UTF-8"><title>Test</title></head><body>' \
                    u'<p> ° | à | á | â | ã | æ </p></body></html>'
 
-        self.assertEquals(minify.xml(html), html_min)
-        self.assertEquals(minify.xml(html, comment), ('<!-- %s -->\n' % comment) + html_min)
+        self.assertEquals(minify.xml(html, encoding='utf-8'), html_min)
+        self.assertEquals(minify.xml(htmlu, encoding='utf-8'), html_min)
+        self.assertEquals(minify.xml(htmlu), html_min)
+        self.assertEquals(minify.xml(html, comment, encoding='utf-8'), ('<!-- %s -->\n' % comment) + html_min)
 
-        css = u'''
+        css = '''
+/* comment
+*/
+@-ms-viewport { width: device-width; }
+@media only screen and (min-device-width: 800px) {
+    html {
+        overflow: hidden;
+    }
+}
+
+html {
+    height: 100%;
+
+
+    width: 100%;
+}
+
+a {
+    color:      #e21f18;
+}
+
+#test, .test     {
+    width: 100%;
+
+
+    height: 100%;
+    background: url("°àáâãæ.png");
+}
+
+'''
+        cssu = u'''
 /* comment
 */
 @-ms-viewport { width: device-width; }
@@ -398,10 +445,23 @@ a {
                   u'@media only screen and (min-device-width:800px){html{overflow:hidden}}html{height:100%;width:100%}' \
                   u'a{color:#e21f18}#test,.test{width:100%;height:100%;background:url("°àáâãæ.png")}'
 
-        self.assertEquals(minify.css(css), css_min)
-        self.assertEquals(minify.css(css, comment), ('/* %s */\n' % comment) + css_min)
+        self.assertEquals(minify.css(css, encoding='utf-8'), css_min)
+        self.assertEquals(minify.css(cssu, encoding='utf-8'), css_min)
+        self.assertEquals(minify.css(cssu), css_min)
+        self.assertEquals(minify.css(css, comment, encoding='utf-8'), ('/* %s */\n' % comment) + css_min)
 
-        js = u'''
+        js = '''
+/* comment
+*/
+// comment
+function log(message) {
+    if (DEBUG && console && console.log) {
+        console.log(message);
+        console.log('°àáâãæ');
+    }
+}
+'''
+        jsu = u'''
 /* comment
 */
 // comment
@@ -415,8 +475,10 @@ function log(message) {
         js_min = u'function log(message){if(DEBUG&&console&&console.log){console.log(message);' \
                  u'console.log(\'°àáâãæ\');}}'
 
-        self.assertEquals(minify.js(js), js_min)
-        self.assertEquals(minify.js(js, comment), ('/* %s */\n' % comment) + js_min)
+        self.assertEquals(minify.js(js, encoding='utf-8'), js_min)
+        self.assertEquals(minify.js(jsu, encoding='utf-8'), js_min)
+        self.assertEquals(minify.js(jsu), js_min)
+        self.assertEquals(minify.js(js, comment, encoding='utf-8'), ('/* %s */\n' % comment) + js_min)
 
     def test_deploy_before_after(self):
         reset_all()
