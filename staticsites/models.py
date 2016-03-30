@@ -32,7 +32,7 @@ class DeployOperation(models.Model):
     operation_type = models.CharField(choices=OPERATION_TYPE, max_length=2)
     path = models.CharField(max_length=250)
     hash = models.CharField(max_length=128, null=True, blank=True)
-    storage = models.BinaryField(max_length=250)
+    storage = models.BinaryField(max_length=250, null=True)
 
     def __unicode__(self):
         return u'%s | %s' % (self.deploy, self.path)

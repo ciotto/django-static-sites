@@ -25,10 +25,13 @@ def dump_storage(storage):
     :param storage: The storage
     :return: String dump of given storage
     """
-    file = StringIO()
-    pickle.dump(storage, file)
+    try:
+        file = StringIO()
+        pickle.dump(storage, file)
 
-    return file.getvalue()
+        return file.getvalue()
+    except TypeError:
+        return None
 
 def load_storage(string):
     """
