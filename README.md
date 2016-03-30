@@ -13,7 +13,7 @@ optimized for *django-static-sites* use. You can specify multiple configuration 
 (`pip install https://github.com/ciotto/django-static-sites/archive/master.zip`)
 2. create an empty optimized project by `django-static-admin startproject PROJECT_NAME` command
 3. move to the `PROJECT_NAME` folder and create site by `python manage.py startsite SITE_NAME` command
-4. deploy `python manage.py migrate`
+4. migrate `python manage.py migrate`
 5. deploy `python manage.py deploy`
 6. start server `python manage.py runserver`
 7. enjoy it at [http://127.0.0.1:8000](http://127.0.0.1:8000) **:-)**
@@ -126,6 +126,7 @@ I use the [django-storages](https://django-storages.readthedocs.org/) AWS storag
 
 *django-static-sites* is work-in-progres:
 
+* add automatic url pattern
 * ~~autodeploy~~
 * ~~static file optimization~~
 * revert deploy if fail
