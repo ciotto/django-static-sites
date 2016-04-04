@@ -15,6 +15,19 @@ from os.path import join
 BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 
 
+import environ
+
+root = environ.Path(__file__) - 3
+base = environ.Path(__file__) - 2
+# This points to the directory containing all the project code
+SITE_ROOT = root()
+BASE_ROOT = base()
+
+env = environ.Env()
+# reading .env file
+environ.Env.read_env(os.path.join(SITE_ROOT, '.env'))
+
+
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/1.7/howto/deployment/checklist/
 
