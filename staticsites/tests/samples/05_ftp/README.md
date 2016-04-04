@@ -1,6 +1,6 @@
 # FTP static site
 
-You can launch the deploy server for this sample by `manage.py runserver --settings staticsites.tests.samples.06_ftp_.settings` 
+You can launch the deploy server for this sample by `manage.py runserver --settings staticsites.tests.samples.05_ftp_.settings` 
 command. The `--settings staticsites.tests.samples.06_ftp_.settings` is necessary only if you want to use 
 *staticsites* sample, if you develop on new project is sufficent to use the `manage.py runserver` command.
 
@@ -81,4 +81,4 @@ Now, we tell *django-static-sites* to use `FTPStorage` for *test* deploy.
 2. [Hello world (with static)](https://github.com/ciotto/django-static-sites/tree/master/staticsites/tests/samples/02_hello_world)
 3. [AWS S3/CloudFront](https://github.com/ciotto/django-static-sites/tree/master/staticsites/tests/samples/03_aws)
 4. [AWS S3/CloudFront (multiple remote)](https://github.com/ciotto/django-static-sites/tree/master/staticsites/tests/samples/04_aws_multiple_deploy_type)
-5. [AWS S3/CloudFront (multiple remote)](https://github.com/ciotto/django-static-sites/tree/master/staticsites/tests/samples/04_aws_multiple_deploy_type)
+5. [FTP](https://github.com/ciotto/django-static-sites/tree/master/staticsites/tests/samples/05_ftp)
