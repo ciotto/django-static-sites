@@ -1,4 +1,5 @@
 import fnmatch
+import io
 
 __author__ = 'Christian Bianciotto'
 
@@ -8,6 +9,7 @@ from StringIO import StringIO
 from conf_dict import BaseDict
 
 import gzip
+from gzip import GzipFile
 import re
 from os.path import isfile
 from os import listdir
@@ -39,9 +41,11 @@ def load_storage(string):
     :param string: The dump string
     :return: Return storage
     """
-    file = StringIO(string)
+    if string:
+        file = StringIO(string)
 
-    return pickle.load(file)
+        return pickle.load(file)
+    return None
 
 
 # Check extensions
@@ -358,7 +362,7 @@ def read_binary(path):
             file.close()
 
 
-def read_file(path):
+def read_text(path):
     """
     Helper function, read file content
     :param path: The file path
@@ -366,7 +370,7 @@ def read_file(path):
     """
     file = None
     try:
-        file = open(path, 'r')
+        file = open(path, 'rt')
 
         return file.read()
     finally:
@@ -389,6 +393,28 @@ def read_gzip_file(path):
         if file:
             file.close()
 
+
+def file_from_content(content, gzip=False):
+    """
+    Helper function, create in-memory file from content
+    :param content: The file content
+    :param gzip: File is GZipped?
+    :return: The an im-memory file
+    """
+    if gzip:
+        #TODO append .gz extension (config)
+        # file = StringIO.StringIO()
+        file = io.BytesIO()
+        gzip_file = GzipFile(fileobj=file, mode="w")
+        # content = content.encode(encoding=encoding)
+        gzip_file.write(content)
+        gzip_file.close()
+    else:
+        # file = StringIO.StringIO(content)
+        # content = content.encode(encoding=encoding)
+        file = io.BytesIO(content)
+
+    return file
 
 # AWS Helper
 

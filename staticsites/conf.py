@@ -41,7 +41,8 @@ STATICSITE_JS_EXTENSIONS = ['.js', '.json']
 STATICSITE_XML_EXTENSIONS = ['.xml'] + STATICSITE_HTML_EXTENSIONS
 
 STATICSITE_DEFAULT_FILE_STORAGE = FileSystemStorage
-STATICSITE_STATICFILES_DIRS = None
+STATICSITE_STATIC_ROOT = ''
+STATICSITE_STATIC_URL = '/'
 
 # Set minify correct functions for extensions
 STATICSITE_MINIFY = conf_dict.Extensions({'': None})

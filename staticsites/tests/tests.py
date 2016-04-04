@@ -1,4 +1,6 @@
 # coding=utf-8
+import tempfile
+
 __author__ = 'Christian Bianciotto'
 
 
@@ -14,6 +16,10 @@ from django.conf import settings
 from django.test import TestCase
 from staticsites import utilities
 from staticsites.deploy import deploy
+
+
+# TODO use override settings
+# TODO use tempdir
 
 
 def reset(attr):
@@ -46,7 +52,6 @@ def reset_all():
     reset('STATICSITE_XML_EXTENSIONS')
 
     reset('STATICSITE_DEFAULT_FILE_STORAGE')
-    reset('STATICSITE_STATICFILES_DIRS')
 
     reset('STATICSITE_MINIFY_FUNC')
     reset('STATICSITE_MINIFY_IGNORE_FILES')
@@ -304,9 +309,7 @@ class TestUtilities(TestCase):
             (FileSystemStorage, {'location': base_path + '/%(deploy_type)s_2'}),
         ]
         settings.STATICSITE_DEPLOY_ROOT = base_path + '/%(deploy_type)s'
-        settings.STATICSITE_STATICFILES_DIRS = (
-            ('staticsites/tests/samples/02_hello_world/static', ),
-        )
+        settings.STATICSITE_GZIP = True
 
         deploy(deploy_type)
 
@@ -317,23 +320,31 @@ class TestUtilities(TestCase):
         self.assertTrue(isfile('%s/%s_2/index.html' % (base_path, deploy_type)))
         self.assertTrue(isfile('%s/%s_2/js/test.js' % (base_path, deploy_type)))
         self.assertTrue(isfile('%s/%s_2/django.png' % (base_path, deploy_type)))
-        self.assertTrue(isfile('%s/%s_2/django.png' % (base_path, deploy_type)))
+        self.assertTrue(isfile('%s/%s_2/static.html' % (base_path, deploy_type)))
 
-        self.assertEquals(utilities.read_gzip_file('deploy/%s/index.html' % deploy_type),
-                          gzip.open('deploy/%s/index.html' % deploy_type).read())
+        self.assertEquals(utilities.read_gzip_file('%s/%s/index.html' % (base_path, deploy_type)),
+                          gzip.open('%s/%s/index.html' % (base_path, deploy_type)).read())
 
-        reset('STATICSITE_STATICFILES_DIRS')
+        if isdir(base_path):
+            shutil.rmtree(base_path)
+
+        settings.STATICSITE_GZIP = False
+        settings.STATICSITE_STATIC_ROOT = 'foo'
+        settings.STATICSITE_STATIC_URL = '/foo/'
 
         deploy(deploy_type)
 
         self.assertTrue(isfile('%s/%s/index.html' % (base_path, deploy_type)))
         self.assertTrue(isfile('%s/%s/js/test.js' % (base_path, deploy_type)))
-        self.assertFalse(isfile('%s/%s/static.html' % (base_path, deploy_type)))
-        self.assertFalse(isfile('%s/%s/django.png' % (base_path, deploy_type)))
+        self.assertTrue(isfile('%s/%s/%s/django.png' % (base_path, deploy_type, settings.STATICSITE_STATIC_ROOT)))
+        self.assertTrue(isfile('%s/%s/%s/static.html' % (base_path, deploy_type, settings.STATICSITE_STATIC_ROOT)))
         self.assertTrue(isfile('%s/%s_2/index.html' % (base_path, deploy_type)))
         self.assertTrue(isfile('%s/%s_2/js/test.js' % (base_path, deploy_type)))
-        self.assertFalse(isfile('%s/%s_2/django.png' % (base_path, deploy_type)))
-        self.assertFalse(isfile('%s/%s_2/django.png' % (base_path, deploy_type)))
+        self.assertTrue(isfile('%s/%s_2/%s/django.png' % (base_path, deploy_type, settings.STATICSITE_STATIC_ROOT)))
+        self.assertTrue(isfile('%s/%s_2/%s/static.html' % (base_path, deploy_type, settings.STATICSITE_STATIC_ROOT)))
+
+        self.assertEquals(utilities.read_text('%s/%s/index.html' % (base_path, deploy_type)),
+                          open('%s/%s/index.html' % (base_path, deploy_type)).read())
 
         if isdir(base_path):
             shutil.rmtree(base_path)
@@ -485,7 +496,7 @@ function log(message) {
 
         deploy_type = 'test_deploy'
 
-        settings.STATICSITE_DEPLOY_ROOT = 'deploy/%(deploy_type)s'
+        settings.STATICSITE_DEPLOY_ROOT = 'deploy/test/%(deploy_type)s'
 
         def before(*args, **kwargs):
             sequence.append('before')

@@ -1,9 +1,13 @@
+import io
+from urlparse import urljoin
+from utilities import file_from_content
+
 __author__ = 'Christian Bianciotto'
 
 
 from gzip import GzipFile
 
-from os.path import abspath, join, getmtime
+from os.path import abspath, join, getmtime, dirname, isdir
 from staticsites import utilities
 from datetime import datetime
 import hashlib
@@ -29,17 +33,16 @@ class DefaultDeployUtilities:
         self.paths = []
         self.deploy_operations = []
 
-    def copy(self, path, sub_path, staticfiles_dir=None, *args, **kwargs):
-        full_path = join(path, sub_path)
+    def copy(self, path, sub_path, *args, **kwargs):
+        static_root = utilities.get_conf('STATICSITE_STATIC_ROOT', self.deploy_type)
 
-        file_storage = None
-        if staticfiles_dir and len(staticfiles_dir) > 1:
-            file_storage = staticfiles_dir[1]
+        full_path = join(path, sub_path)
+        storage_path = join(static_root, sub_path)
 
         # TODO get also from staticfiles dir (trasforme tupla to dict?)
         minify = utilities.get_minify(None, None, self.deploy_type, sub_path)
         gzip = utilities.get_gzip(None, None, self.deploy_type, sub_path)
-        storages = utilities.get_storages(file_storage, None, self.deploy_type, sub_path, **kwargs)
+        storages = utilities.get_storages(None, None, self.deploy_type, sub_path, **kwargs)
         encoding = utilities.get_encoding(None, None, self.deploy_type, sub_path)
 
         gzip_ignore_files = utilities.get_conf('STATICSITE_GZIP_IGNORE_FILES',
@@ -54,52 +57,46 @@ class DefaultDeployUtilities:
             try:
                 operation_type = 'N'
 
-                if self.storage.exists(sub_path):
+                if self.storage.exists(storage_path):
                     # Check if need update by checking modification date
-                    if self.force or datetime.fromtimestamp(getmtime(full_path)) > self.storage.modified_time(sub_path):
-                        self.storage.delete(sub_path)
+                    if self.force or datetime.fromtimestamp(getmtime(full_path)) > self.storage.modified_time(storage_path):
+                        self.storage.delete(storage_path)
                         operation_type = 'U'
                     else:
                         operation_type = 'NU'
-                        logging.info('File %s not updated' % path)
+                        logging.info('File %s not updated' % storage_path)
 
                 if operation_type is not 'NU':
                     if minify or gzip:
                         if minify and sub_path not in minify_ignore_files:
-                            content = utilities.read_file(full_path)
+                            content = utilities.read_text(full_path)
                             try:
-                                content = minify(content)
+                                content = minify(content, encoding=encoding)
+                                content = content.encode(encoding=encoding)
                             except Exception as e:
                                 logging.warning('Error occurred during minify on file %s: %s' % (full_path, e.message))
                         else:
                             content = utilities.read_binary(full_path)
 
-                        if gzip and sub_path not in gzip_ignore_files:
-                            #TODO append .gz extension (config)
-                            file = StringIO.StringIO()
-                            gzip_file = GzipFile(fileobj=file, mode="w")
-                            gzip_file.write(content)
-                            gzip_file.close()
-                        else:
-                            file = StringIO.StringIO(content)
+                        file = file_from_content(content, gzip=gzip and sub_path not in gzip_ignore_files)
                     else:
                         file = open(full_path, 'rb')
-                    self.storage.save(sub_path, file)
+                    self.storage.save(storage_path, file)
 
                     if operation_type is 'U':
-                        logging.info('Update file %s' % sub_path)
+                        logging.info('Update file %s' % storage_path)
                     else:
-                        logging.info('Create static file %s' % sub_path)
+                        logging.info('Create static file %s' % storage_path)
 
                 dpo = DeployOperation(deploy=self.deploy,
                                       file_type='S',
                                       operation_type=operation_type,
-                                      path=sub_path,
+                                      path=storage_path,
                                       storage=utilities.dump_storage(self.storage))
                 dpo.save()
 
-                if sub_path not in self.paths:
-                    self.paths.append(sub_path)
+                if storage_path not in self.paths:
+                    self.paths.append(storage_path)
                 self.deploy_operations.append(dpo)
             finally:
                 if file:
@@ -126,14 +123,31 @@ class DefaultDeployUtilities:
             before_deploy(deploy_type=self.deploy_type, deploy=self.deploy)
 
         # Copy static files
-        staticfiles_dirs = utilities.get_conf('STATICSITE_STATICFILES_DIRS', self.deploy_type)
-        if staticfiles_dirs:
-            for staticfiles_dir in staticfiles_dirs:
-                path = abspath(staticfiles_dir[0])
+        for appname in settings.INSTALLED_APPS:
+            if appname != 'staticsites':
+                try:
+                    app = import_module(appname)
+                    staticfiles_dir = join(dirname(app.__file__), 'static')
 
-                ignore = utilities.get_conf('STATICSITE_IGNORE', deploy_type=self.deploy_type)
+                    if isdir(staticfiles_dir):
+                        ignore = utilities.get_conf('STATICSITE_IGNORE', deploy_type=self.deploy_type)
 
-                utilities.iterate_dir(path, self.copy, ignore, staticfiles_dir)
+                        utilities.iterate_dir(staticfiles_dir, self.copy, ignore)
+                    else:
+                        logging.info('No static folder for app %s' % appname)
+                except ImportError:
+                    logging.info('No module for app %s' % appname)
+
+        # Replace static template tag to use STATICSITE_STATIC_ROOT
+        static_url = utilities.get_conf('STATICSITE_STATIC_URL', self.deploy_type)
+
+        from django.contrib.staticfiles.templatetags import staticfiles
+        from django.contrib.admin.templatetags import admin_static
+
+        def static(path):
+            return urljoin(static_url, path)
+        staticfiles.static = static
+        admin_static.static = static
 
         # Create dynamic files
         for appname in settings.INSTALLED_APPS:
@@ -169,7 +183,8 @@ class DefaultDeployUtilities:
                             content = response.content
                             if minify and path not in minify_ignore_files:
                                 try:
-                                        content = minify(content, encoding=encoding)
+                                    content = minify(content, encoding=encoding)
+                                    content = content.encode(encoding=encoding)
                                 except Exception as e:
                                     logging.warning('Error occurred during minify on view %s: %s' % (func_name, e.message))
 
@@ -202,15 +217,7 @@ class DefaultDeployUtilities:
                                 if new_dpo.operation_type is not 'NU':
                                     file = None
                                     try:
-                                        if gzip and path not in gzip_ignore_files:
-                                            #TODO gzip config discriminate extension
-                                            #TODO append .gz extension (config)
-                                            file = StringIO.StringIO()
-                                            gzip_file = GzipFile(fileobj=file, mode="w")
-                                            gzip_file.write(content)
-                                            gzip_file.close()
-                                        else:
-                                            file = StringIO.StringIO(content)
+                                        file = file_from_content(content, gzip=gzip and path not in gzip_ignore_files)
 
                                         self.storage.save(path, file)
 

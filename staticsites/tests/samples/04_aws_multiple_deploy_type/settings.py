@@ -88,13 +88,7 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/1.7/howto/static-files/
 
-STATIC_ROOT = os.path.join(BASE_DIR, 'deploy/dev')
 STATIC_URL = '/static/'
-
-STATICSITE_STATICFILES_DIRS = [
-    ('staticsites/tests/samples/04_aws_multiple_deploy_type/static', ),
-]
-
 
 # S3BotoStorage configuration
 AWS_ACCESS_KEY_ID = 'YOUR_AWS_ACCESS_KEY_ID'
