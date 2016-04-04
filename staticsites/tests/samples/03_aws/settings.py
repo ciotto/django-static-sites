@@ -15,6 +15,19 @@ from os.path import join
 BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 
 
+import environ
+
+root = environ.Path(__file__) - 3
+base = environ.Path(__file__) - 2
+# This points to the directory containing all the project code
+SITE_ROOT = root()
+BASE_ROOT = base()
+
+env = environ.Env()
+# reading .env file
+environ.Env.read_env(os.path.join(SITE_ROOT, '.env'))
+
+
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/1.7/howto/deployment/checklist/
 
@@ -32,12 +45,7 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = (
-    'django.contrib.admin',
-    'django.contrib.auth',
-    'django.contrib.contenttypes',
-    'django.contrib.sessions',
-    'django.contrib.messages',
-    # 'django.contrib.staticfiles',
+    'django.contrib.staticfiles',
 
     # This app
     'staticsites',
@@ -92,14 +100,14 @@ STATIC_URL = '/static/'
 
 
 # S3BotoStorage configuration
-AWS_ACCESS_KEY_ID = 'YOUR_AWS_ACCESS_KEY_ID'
-AWS_SECRET_ACCESS_KEY = 'YOUR_AWS_SECRET_ACCESS_KEY'
-AWS_STORAGE_BUCKET_NAME = 'YOUR_S3_BUCKET_NAME'
+AWS_ACCESS_KEY_ID = env('AWS_ACCESS_KEY_ID')
+AWS_SECRET_ACCESS_KEY = env('AWS_SECRET_ACCESS_KEY')
+AWS_STORAGE_BUCKET_NAME = env('AWS_STORAGE_BUCKET_NAME')
 
 # Sample configuration
 from staticsites.conf_dict import DeployTypes
 
-AWS_DISTRIBUTION_ID = 'YOUR_CLOUDFRONT_DISTRIBUTION_ID'
+AWS_DISTRIBUTION_ID = env('AWS_DISTRIBUTION_ID')
 
 STATICSITE_DEPLOY_ROOT = DeployTypes({
     'dev': 'deploy/%(deploy_type)s',
