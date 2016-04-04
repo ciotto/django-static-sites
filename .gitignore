@@ -62,6 +62,7 @@ django-static-sites.iml
 
 # Virtualenv
 virtualenv/
+.virtualenv/
 
 # Deploy folder for example sites
 deploy/
