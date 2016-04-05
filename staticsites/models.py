@@ -8,7 +8,7 @@ from datetime import datetime
 class Deploy(models.Model):
     id = models.AutoField(primary_key=True)
     type = models.CharField(max_length=10)
-    date = models.DateTimeField(default=datetime.now())
+    date = models.DateTimeField(auto_now=True)
 
     def __unicode__(self):
         return u'%s - %s' % (self.type, self.date)
