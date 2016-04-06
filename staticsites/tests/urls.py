@@ -1,8 +1,7 @@
-from os.path import dirname
 from django.conf import settings
 from django.conf.urls import patterns, include, url
 from django.contrib import admin
-from os.path import join
+from django.views.static import serve
 from staticsites.utilities import get_deploy_root, get_default_index
 
 urlpatterns = patterns('',
@@ -15,14 +14,19 @@ urlpatterns = patterns('',
 
 # Serve default deploy folder as site root
 if settings.DEBUG:
-    urlpatterns += patterns('', (
-        r'^(?:%s)?$' % get_default_index(deploy_type='dev'),
-        'django.views.static.serve',
-         {
-            'document_root': get_deploy_root(deploy_type='dev'), 'path': get_default_index(deploy_type='dev')
-         }
-    ), (
-        r'^(?P<path>.*)$',
-        'django.views.static.serve',
-        {'document_root': get_deploy_root(deploy_type='dev')}
-    ))
+    urlpatterns += [
+        url(
+            r'^(?:%s)?$' % get_default_index(deploy_type='dev'),
+            serve,
+            {
+                'document_root': get_deploy_root(deploy_type='dev'), 'path': get_default_index(deploy_type='dev')
+            }
+        ),
+        url(
+            r'^(?P<path>.*)$',
+            serve,
+            {
+                'document_root': get_deploy_root(deploy_type='dev')
+            }
+        ),
+    ]

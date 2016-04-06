@@ -15,6 +15,7 @@ Including another URLconf
 """
 from django.conf import settings
 from django.conf.urls import url, include, patterns
+from django.views.static import serve
 from staticsites.utilities import get_default_index, get_deploy_root
 
 urlpatterns = [
@@ -22,17 +23,17 @@ urlpatterns = [
 
 # Serve default deploy folder as site root
 if settings.DEBUG:
-    urlpatterns = [
+    urlpatterns += [
         url(
             r'^(?:%s)?$' % get_default_index(deploy_type='dev'),
-            'django.views.static.serve',
+            serve,
             {
                 'document_root': get_deploy_root(deploy_type='dev'), 'path': get_default_index(deploy_type='dev')
             }
         ),
         url(
             r'^(?P<path>.*)$',
-            'django.views.static.serve',
+            serve,
             {
                 'document_root': get_deploy_root(deploy_type='dev')
             }

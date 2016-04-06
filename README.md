@@ -101,17 +101,17 @@ If you want to use Django development server to serve the deployed static site:
 ```python
 # Serve default deploy folder as site root
 if settings.DEBUG:
-    urlpatterns = [
+    urlpatterns += [
         url(
             r'^(?:%s)?$' % get_default_index(deploy_type='dev'),
-            'django.views.static.serve',
+            serve,
             {
                 'document_root': get_deploy_root(deploy_type='dev'), 'path': get_default_index(deploy_type='dev')
             }
         ),
         url(
             r'^(?P<path>.*)$',
-            'django.views.static.serve',
+            serve,
             {
                 'document_root': get_deploy_root(deploy_type='dev')
             }
