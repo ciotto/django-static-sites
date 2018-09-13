@@ -69,7 +69,6 @@ deploy/
 
 # DB
 staticsites/db.sqlite3
-staticsites/migrations/
 
 # Test
 staticsites/tests/samples/real_sites/
