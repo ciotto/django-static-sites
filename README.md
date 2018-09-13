@@ -1,4 +1,4 @@
-#django-static-sites
+# django-static-sites
 
 *django-static-sites* is an easy to use *Django* app that allow you to create a static sites with the power of Django
 template system. You can render an existing *Django* view by adding a decorator or you can create an empty project
@@ -7,7 +7,7 @@ optimized for *django-static-sites* use. You can specify multiple configuration 
 [GitHub](https://github.com/ciotto/django-static-sites)
 
 
-##How to start
+## How to start
 
 1. install *django-static-sites* in your python path or in your *virtualenv* path
 (`pip install https://github.com/ciotto/django-static-sites/archive/master.zip`)
@@ -19,7 +19,7 @@ optimized for *django-static-sites* use. You can specify multiple configuration 
 7. enjoy it at [http://127.0.0.1:8000](http://127.0.0.1:8000) **:-)**
 
 
-##How to use
+## How to use
 
 If you want to use the *Django* template system, you must to add a function in your `views.py` file and add the
 `@staticview` decorator:
@@ -80,7 +80,7 @@ functions if is declared. Now we can add the import line in the `index.html` fil
 You can see this and more samples in `staticsites/tests/samples` folder; you can launch the deploy server for this 
 samples by `manage.py runserver --settings staticsites.tests.samples.SAMPLE_NAME.settings` command.
 
-######Other samples
+###### Other samples
 
 1. [Hello world](https://github.com/ciotto/django-static-sites/tree/master/staticsites/tests/samples/01_hello_world)
 2. [Hello world (with static)](https://github.com/ciotto/django-static-sites/tree/master/staticsites/tests/samples/02_hello_world)
@@ -88,7 +88,7 @@ samples by `manage.py runserver --settings staticsites.tests.samples.SAMPLE_NAME
 4. [AWS S3/CloudFront (multiple remote)](https://github.com/ciotto/django-static-sites/tree/master/staticsites/tests/samples/04_aws_multiple_deploy_type)
 5. [FTP](https://github.com/ciotto/django-static-sites/tree/master/staticsites/tests/samples/05_ftp)
 
-###Add to an existing project
+### Add to an existing project
 
 If you want to integrate `django-static-sites` in existing project you must to:
 
@@ -120,7 +120,7 @@ if settings.DEBUG:
 ```
 
 
-##Remote deploy
+## Remote deploy
 
 *django-static-sites* use the *Django* `Storage` system during the deploy procedure; by default the file are deployed 
 locally using `FileSystemStorage`, but you can use any other `Storage` with the correct settings. In the 
@@ -128,7 +128,7 @@ locally using `FileSystemStorage`, but you can use any other `Storage` with the 
 I use the [django-storages](https://django-storages.readthedocs.org/) AWS storage for deploying on Amazon S3 bucket. 
 
 
-##ToDo
+## ToDo
 
 *django-static-sites* is work-in-progres:
 
