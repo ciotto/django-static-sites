@@ -2,8 +2,12 @@ __author__ = 'Christian Bianciotto'
 
 
 from setuptools import setup, find_packages
-from pip.req import parse_requirements
-from pip.download import PipSession
+try:
+    from pip._internal.req import parse_requirements
+    from pip._internal.download import PipSession
+except ImportError:
+    from pip.req import parse_requirements
+    from pip.download import PipSession
 
 
 README = open('README.md').read()
@@ -13,7 +17,7 @@ install_requires = [str(ir.req) for ir in install_requires]
 
 setup(
     name='django-static-sites',
-    version='0.0.5',
+    version='0.0.6',
     packages=find_packages(),
     package_data={'staticsites': ['templates/*/*-tpl', 'templates/*/*/*-tpl']},
     include_package_data=True,
