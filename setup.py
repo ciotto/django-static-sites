@@ -17,7 +17,7 @@ install_requires = [str(ir.req) for ir in install_requires]
 
 setup(
     name='django-static-sites',
-    version='0.0.6',
+    version='0.0.7',
     packages=find_packages(),
     package_data={'staticsites': ['templates/*/*-tpl', 'templates/*/*/*-tpl']},
     include_package_data=True,
@@ -35,10 +35,9 @@ setup(
         'Environment :: Web Environment',
         'Framework :: Django',
         'Intended Audience :: Developers',
-        'License :: GNU GENERAL PUBLIC LICENSE',
+        'License :: OSI Approved :: MIT License',
         'Operating System :: OS Independent',
         'Programming Language :: Python',
-        'Programming Language :: Python :: 2.6',
         'Programming Language :: Python :: 2.7',
     ],
     install_requires=install_requires,
